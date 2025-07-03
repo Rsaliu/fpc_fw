@@ -48,6 +48,8 @@ In this project, we will be using  `Unity` Test Framework
 ### To run tests
 - edit the file at: `unity-app/main/test_app_main.c`
 - add the name of your test by including a new line with `unity_run_test_by_name("<name-of-your-test>");`
+- connect esp32 cable to your laptop and select the COMport for the esp32 e.g COM15
 - press `Ctrl+Shift+P` 
 - then search for `ESP-IDF: Unit Test: Build and Flash Unit Test App for Testing` in the search box
 - click it, and it should run the test.
+
