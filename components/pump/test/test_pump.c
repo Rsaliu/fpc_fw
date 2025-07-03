@@ -7,7 +7,8 @@
 pump_t *pump = NULL;
 void setUp(void) {
     // Set up code before each test
-    pump_config_t config = {1, "Test Pump", 5.0, {1}}; // Example configuration
+    relay_t relay = {.pin_number=1}; // Example relay configuration
+    pump_config_t config = {1, "Test Pump", 5.0, &relay}; // Example configuration
     pump = pump_create(config);  
 }
 
