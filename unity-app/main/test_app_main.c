@@ -20,6 +20,7 @@ void app_main(void)
     UNITY_BEGIN();
     unity_run_test_by_name("pump_test");
     unity_run_test_by_name("tank_test");
+    unity_run_test_by_name("tank_monitor_test");
     UNITY_END();
 }
 
