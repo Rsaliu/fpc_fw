@@ -16,8 +16,8 @@ typedef struct {
     float capacity_in_liters; // Total capacity of the tank in liters
     tank_shape_t shape; // Shape of the tank (rectangle or cylinder)
     float height_in_cm; // Height of the tank in centimeters
-    int full_level_in_cm; // Full level of the tank in centimeters
-    int low_level_in_cm; // Low level of the tank in centimeters
+    int full_level_in_mm; // Full level of the tank in centimeters
+    int low_level_in_mm; // Low level of the tank in centimeters
 
 } tank_config_t;
 

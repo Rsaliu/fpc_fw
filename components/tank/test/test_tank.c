@@ -72,8 +72,8 @@ TEST_CASE("tank_test", "test_tank_get_config") {
     TEST_ASSERT_EQUAL_FLOAT(1000.0, config.capacity_in_liters);
     TEST_ASSERT_EQUAL(TANK_SHAPE_RECTANGLE, config.shape);
     TEST_ASSERT_EQUAL_FLOAT(100.0, config.height_in_cm);
-    TEST_ASSERT_EQUAL(90, config.full_level_in_cm);
-    TEST_ASSERT_EQUAL(10, config.low_level_in_cm);
+    TEST_ASSERT_EQUAL(90, config.full_level_in_mm);
+    TEST_ASSERT_EQUAL(10, config.low_level_in_mm);
     tankTearDown();
 }
 
