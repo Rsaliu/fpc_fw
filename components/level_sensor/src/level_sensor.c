@@ -93,7 +93,12 @@ error_type_t rs485_read(level_sensor_t* level_sensor_obj, char* data, size_t buf
     }
     
     *read_size = uart_read_bytes(level_sensor_obj->uart_num, data, buffer_size, pdMS_TO_TICKS(200));
-    if (*read_size < buffer_size)
+    if (*read_size == 0)
+    {
+        return SYSTEM_TIMED_OUT;
+    }
+    
+    if (*read_size >= buffer_size)
     {
         data[*read_size] = '\0';
         printf("received data sucessfully\n");
