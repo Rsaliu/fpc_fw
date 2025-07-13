@@ -28,9 +28,11 @@ void acs712SetUp(void)
         .adc_channel = ADC_CHANNEL_6,
         .adc_res = ACS712_ADC_RES_12BIT,
         .adc_atten = ADC_ATTEN_DB_11,
-        .vref = 5.0f,
-        .sensitivity = 0.066f};
+        .vref = 0.833f,
+        .sensitivity = 0.022f
+    };
     acs712_sensor = acs712_create(&config);
+    TEST_ASSERT_NOT_NULL_MESSAGE(acs712_sensor, "Failed to create ACS712 sensor");
 }
 
 void acs712TearDown(void)
@@ -47,43 +49,14 @@ void acs712TearDown(void)
     }
 }
 
-// TEST_CASE("acs712_test", "test_acs712_create") {
-//     acs712SetUp();
-//     TEST_ASSERT_NOT_NULL(acs712_sensor);
-//     TEST_ASSERT_FALSE(acs712_sensor->is_initialized);
-//     TEST_ASSERT_EQUAL_FLOAT(2.5f, acs712_sensor->zero_voltage);
-//     TEST_ASSERT_EQUAL_PTR(adc_handle, acs712_sensor->adc_handle);
-//     TEST_ASSERT_NULL(acs712_sensor->cali_handle);
-//     acs712TearDown();
-// }
-
-// TEST_CASE("acs712_test", "test_acs712_init") {
-//     acs712SetUp();
-//     error_type_t result = acs712_sensor_init(acs712_sensor);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-//     TEST_ASSERT_TRUE(acs712_sensor->is_initialized);
-//     TEST_ASSERT_EQUAL_PTR(adc_handle, acs712_sensor->adc_handle);
-
-//     TEST_ASSERT_NOT_NULL(acs712_sensor->cali_handle);
-//     acs712TearDown();
-// }
-
-// TEST_CASE("acs712_test", "test_acs712_init_invalid_config") {
-//     acs712SetUp();
-//     acs712_sensor->config.adc_channel = ADC_CHANNEL_8;
-//     error_type_t result = acs712_sensor_init(acs712_sensor);
-//     TEST_ASSERT_EQUAL(SYSTEM_INVALID_PARAMETER, result);
-//     TEST_ASSERT_FALSE(acs712_sensor->is_initialized);
-//     acs712_sensor->config.adc_channel = ADC_CHANNEL_6;
-//     acs712TearDown();
-// }
 
 TEST_CASE("acs712_test", "test_acs712_create")
 {
     setUp();
     TEST_ASSERT_NOT_NULL(acs712_sensor);
     TEST_ASSERT_FALSE(acs712_sensor->is_initialized);
-    TEST_ASSERT_EQUAL_FLOAT(1.25f, acs712_sensor->zero_voltage); // vref/2 = 2.5/2
+    // TEST_ASSERT_EQUAL_FLOAT(1.25f, acs712_sensor->zero_voltage); // vref/2 = 2.5/2
+    TEST_ASSERT_EQUAL_FLOAT(0.4165f, acs712_sensor->zero_voltage); 
     TEST_ASSERT_EQUAL_PTR(adc_handle, acs712_sensor->adc_handle);
     TEST_ASSERT_NULL(acs712_sensor->cali_handle);
     tearDown();
@@ -194,6 +167,26 @@ TEST_CASE("acs712_test", "test_acs712_calibrate_zero")
     TEST_ASSERT_TRUE(zero_voltage >= 0.0f && zero_voltage <= 2.5f); // Range with divider
     TEST_ASSERT_EQUAL_FLOAT(zero_voltage, acs712_sensor->zero_voltage);
     acs712TearDown();
+}
+
+TEST_CASE("acs712_test", "test_acs712_measure_current_with_load") {
+    error_type_t result = acs712_sensor_init(acs712_sensor);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+
+    float zero_voltage;
+    result = acs712_calibrate_zero(acs712_sensor, &zero_voltage);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    ESP_LOGI(TAG, "Calibrated zero voltage: %.2f V", zero_voltage);
+
+    // Connect the 9V battery with 220Ω resistor load
+    // Expected current: I = V/R = 9V / 220Ω ≈ 40.9 mA
+    // Expected voltage shift: 40.9 mA * 0.022 V/A ≈ 0.90 mV above zero_voltage
+
+    float current;
+    result = acs712_read_current(acs712_sensor, ¤t);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    ESP_LOGI(TAG, "Measured current: %.2f mA", current * 1000); // Convert to mA
+    TEST_ASSERT_TRUE(current > 0.0f && current < 0.1f); // Expect 20-50 mA
 }
 
 TEST_CASE("acs712_test", "test_acs712_check_overcurrent")
