@@ -18,7 +18,7 @@ void app_main(void)
 
     print_banner("Running all the registered tests");
     UNITY_BEGIN();
-    unity_run_test_by_name("pump_test");
+    unity_run_test_by_name("acs712_test");
     UNITY_END();
 }
 
