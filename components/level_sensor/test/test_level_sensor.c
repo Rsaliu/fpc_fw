@@ -6,8 +6,9 @@
 
 level_sensor_t* level_Sensor = NULL;
 
+
 void level_sensor_setup(void){
-    level_sensor_config_t config ={2,16,17,4,9600};
+    level_sensor_config_t config ={2,17,16,4,9600};
     level_Sensor = level_sensor_create(&config);
 }
 
@@ -49,13 +50,35 @@ TEST_CASE("leve_sensor_test", "test_rs485_write"){
 
 TEST_CASE("level_sensor_test", "test_rs485_read"){
     level_sensor_setup();
+    level_sensor_config_t config ={1,32,33,5,9600};
+    level_sensor_t *level_Sensor2 = level_sensor_create(&config);
+    TEST_ASSERT_NOT_NULL(level_Sensor);
+    TEST_ASSERT_NOT_NULL(level_Sensor2);
     error_type_t test_result;
-    char data[5];
-    size_t read_size;
-    test_result = rs485_read(level_Sensor, data, 4,&read_size);
+    test_result = level_sensor_init(level_Sensor);
+    TEST_ASSERT_EQUAL(test_result,SYSTEM_OK);
+    test_result = level_sensor_init(level_Sensor2);
+    TEST_ASSERT_EQUAL(test_result,SYSTEM_OK);
+    char data [] = {1,2,3,4};
+    char read_buffer[4];
+    int read_size;
+
+    test_result = rs485_write(level_Sensor, data, 4);
     TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
+
+    test_result = rs485_read(level_Sensor2, read_buffer, 4,&read_size);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
+    printf("read size: %d\n", read_size);
+    TEST_ASSERT_EQUAL(read_size,4);
+    for(int x=0;x<4;x++){
+
+        TEST_ASSERT_EQUAL(data[x],read_buffer[x]);
+        printf("data and read buffer is equal\n");
+    }
+    
     printf("read sucessfully\n");
     level_sensor_tearDown();
+    level_sensor_destroy(&level_Sensor2);
 }
 
 

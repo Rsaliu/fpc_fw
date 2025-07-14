@@ -12,8 +12,8 @@
 struct level_sensor_t
 {
     int uart_num;
-    int rs485_ro_pin; 
-    int rs485_di_pin;
+    int rs485_di_pin; 
+    int rs485_ro_pin;
     int rs485_dir_pin;
     int baud_rate;
     bool activate;
@@ -52,13 +52,14 @@ error_type_t level_sensor_init(level_sensor_t* level_sensor_obj){
     // configure uart pin
 
     uart_param_config(level_sensor_obj->uart_num, &uart_config);
-    uart_set_pin(level_sensor_obj->uart_num, level_sensor_obj->rs485_ro_pin ,level_sensor_obj->rs485_di_pin, UART_PIN_NO_CHANGE , UART_PIN_NO_CHANGE );
+    uart_set_pin(level_sensor_obj->uart_num, level_sensor_obj->rs485_di_pin ,level_sensor_obj->rs485_ro_pin, UART_PIN_NO_CHANGE , UART_PIN_NO_CHANGE );
     uart_driver_install(level_sensor_obj->uart_num, BUF_SIZE*2,0,0,NULL,0);
 
     //configure gpio pin
     gpio_set_direction(level_sensor_obj->rs485_dir_pin, GPIO_MODE_OUTPUT);
+
     gpio_set_level(level_sensor_obj->rs485_dir_pin, 0); // 0 -> LOW, 1 -> HIGH
-                                      // set the rs485 to receiver mode  
+                                      // set the rs485 to receiver mode                                  
     level_sensor_obj->activate = true;
 
     return SYSTEM_OK;
@@ -81,30 +82,20 @@ error_type_t rs485_write(level_sensor_t* level_sensor_obj, const char* data, siz
 
     return SYSTEM_OK;
  }
-error_type_t rs485_read(level_sensor_t* level_sensor_obj, char* data, size_t buffer_size, size_t* read_size){
+error_type_t rs485_read(level_sensor_t* level_sensor_obj, char* data, size_t buffer_size, int* read_size){
     if (level_sensor_obj == NULL)
     {
         return SYSTEM_NULL_PARAMETER;
     }
     
-    if (!level_sensor_obj->activate)
+    *read_size = uart_read_bytes(level_sensor_obj->uart_num, data, buffer_size, pdMS_TO_TICKS(200)); 
+    if (*read_size != -1)
     {
-        return SYSTEM_INVALID_STATE;
+         printf("received data sucessfully\n");
     }
+       
+       
     
-    *read_size = uart_read_bytes(level_sensor_obj->uart_num, data, buffer_size, pdMS_TO_TICKS(200));
-    if (*read_size == 0)
-    {
-        return SYSTEM_TIMED_OUT;
-    }
-    
-    if (*read_size >= buffer_size)
-    {
-        data[*read_size] = '\0';
-        printf("received data sucessfully\n");
-
-         
-    }
 
       return SYSTEM_OK;
  }
@@ -112,12 +103,18 @@ error_type_t rs485_read(level_sensor_t* level_sensor_obj, char* data, size_t buf
 error_type_t level_sensor_deinit(level_sensor_t* level_sensor_obj){
     if (level_sensor_obj == NULL)return SYSTEM_NULL_PARAMETER;
     level_sensor_obj->activate = false;
+    uart_driver_delete(level_sensor_obj->uart_num);
     return SYSTEM_OK;
     
 }
 
 error_type_t level_sensor_destroy(level_sensor_t** level_sensor_obj){
     if (*level_sensor_obj == NULL) return SYSTEM_NULL_PARAMETER;
+    if ((*level_sensor_obj)->activate)
+    {
+        level_sensor_deinit(*level_sensor_obj);
+    }
+    
     free(*level_sensor_obj);
     *level_sensor_obj = NULL;
 
