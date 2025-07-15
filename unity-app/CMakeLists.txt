@@ -7,7 +7,7 @@ include($ENV{IDF_PATH}/tools/cmake/version.cmake)
 # 1. Add here if the component is compatible with IDF >= v4.3
 set(EXTRA_COMPONENT_DIRS "../components")
 
-set(TEST_COMPONENTS "pump tank tank_monitor")
+set(TEST_COMPONENTS "pump tank tank_monitor pump_control_unit")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(example_test_app)
