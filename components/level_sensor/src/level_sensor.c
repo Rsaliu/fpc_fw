@@ -28,7 +28,7 @@ level_sensor_t* level_sensor_create(const level_sensor_config_t* config){
 
 error_type_t level_sensor_init(level_sensor_t* level_sensor_obj){
     if(level_sensor_obj == NULL)return SYSTEM_NULL_PARAMETER;
-    if(!level_sensor_obj->activate)return SYSTEM_INVALID_STATE;
+    if(level_sensor_obj->activate)return SYSTEM_INVALID_STATE;
     level_sensor_obj->activate = true;
     return SYSTEM_OK;
 }

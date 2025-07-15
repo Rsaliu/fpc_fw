@@ -19,14 +19,14 @@ void rs485_tearDown(void){
     }
 }
 
-TEST_CASE(" rs485_test", "test_rs485_create"){
+TEST_CASE("rs485_test", "test_rs485_create"){
     rs485_setup();
     TEST_ASSERT_NOT_NULL(rs485);
     printf("create is sucessful");
     rs485_tearDown();
 }
 
-TEST_CASE(" rs485_test", "test_rs485_init"){
+TEST_CASE("rs485_test", "test_rs485_init"){
     rs485_setup();
     error_type_t test_result;
     test_result = rs485_init(rs485);
@@ -47,7 +47,7 @@ TEST_CASE("leve_sensor_test", "test_rs485_write"){
     rs485_tearDown();
 }
 
-TEST_CASE(" rs485_test", "test_rs485_read"){
+TEST_CASE("rs485_test", "test_rs485_read"){
     rs485_setup();
     rs485_config_t config ={1,32,33,5,9600};
     rs485_t *rs4852 = rs485_create(&config);
@@ -70,7 +70,7 @@ TEST_CASE(" rs485_test", "test_rs485_read"){
     printf("read size: %d\n", read_size);
     TEST_ASSERT_EQUAL(read_size,4);
     for(int x=0;x<4;x++){
-
+        
         TEST_ASSERT_EQUAL(data[x],read_buffer[x]);
         printf("data and read buffer is equal\n");
     }
@@ -81,7 +81,7 @@ TEST_CASE(" rs485_test", "test_rs485_read"){
 }
 
 
-TEST_CASE(" rs485_test", "test_rs485_deinit"){
+TEST_CASE("rs485_test", "test_rs485_deinit"){
     rs485_setup();
     error_type_t test_result = rs485_deinit(rs485);
     TEST_ASSERT_EQUAL(SYSTEM_OK,test_result);
@@ -90,7 +90,7 @@ TEST_CASE(" rs485_test", "test_rs485_deinit"){
 
 }
 
-TEST_CASE(" rs485_test", "test_rs485_destroy"){
+TEST_CASE("rs485_test", "test_rs485_destroy"){
     rs485_setup();
     error_type_t test_result = rs485_destroy(&rs485);
     TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);

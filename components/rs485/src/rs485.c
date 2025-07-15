@@ -39,13 +39,13 @@ rs485_t* rs485_create(const rs485_config_t* config){
 error_type_t rs485_init( rs485_t* rs485_obj){
     if(rs485_obj == NULL)return SYSTEM_NULL_PARAMETER;
 
-    if (!rs485_obj->uart_num) return SYSTEM_INVALID_MODE;
+    if (rs485_obj->uart_num < 0) return SYSTEM_INVALID_PARAMETER;
 
-    if(!rs485_obj->rs485_di_pin || !rs485_obj->rs485_ro_pin || !rs485_obj->rs485_dir_pin){
+    if(rs485_obj->rs485_di_pin < 0|| rs485_obj->rs485_ro_pin < 0 || rs485_obj->rs485_dir_pin < 0){
         return SYSTEM_INVALID_PIN_NUMBER;
     }
 
-    if(!rs485_obj->baud_rate)return SYSTEM_INVALID_BAUD_RATE;
+    if(rs485_obj->baud_rate < 0)return SYSTEM_INVALID_BAUD_RATE;
     
 
     uart_config_t uart_config = {
@@ -102,9 +102,6 @@ error_type_t rs485_read( rs485_t* rs485_obj, char* data, size_t buffer_size, int
          printf("received data sucessfully\n");
     }
        
-       
-    
-
       return SYSTEM_OK;
  }
 
