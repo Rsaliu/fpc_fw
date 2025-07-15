@@ -97,7 +97,7 @@ error_type_t tank_monitor_destroy(tank_monitor_t **monitor) {
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_get_state(tank_monitor_t *monitor, tank_monitor_state_t *state) {
+error_type_t tank_monitor_get_state(const tank_monitor_t *monitor, tank_monitor_state_t *state) {
     if (monitor == NULL || state == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or state pointer
     }
@@ -106,7 +106,7 @@ error_type_t tank_monitor_get_state(tank_monitor_t *monitor, tank_monitor_state_
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_get_config(tank_monitor_t *monitor, tank_monitor_config_t *config) {
+error_type_t tank_monitor_get_config(const tank_monitor_t *monitor, tank_monitor_config_t *config) {
     if (monitor == NULL || config == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or configuration pointer
     }

@@ -2,6 +2,7 @@
 #define __TANK_MONITOR_H__
 #include <common_headers.h>
 #include "tank.h"
+#include <event.h>
 
 // dummy level sensor object
 typedef struct {
@@ -46,8 +47,8 @@ tank_monitor_t* tank_monitor_create(tank_monitor_config_t config);
 error_type_t tank_monitor_init(tank_monitor_t *monitor);
 error_type_t tank_monitor_deinit(tank_monitor_t *monitor);
 error_type_t tank_monitor_destroy(tank_monitor_t **monitor);
-error_type_t tank_monitor_get_state(tank_monitor_t *monitor, tank_monitor_state_t *state);
-error_type_t tank_monitor_get_config(tank_monitor_t *monitor, tank_monitor_config_t *config);
+error_type_t tank_monitor_get_state(const tank_monitor_t *monitor, tank_monitor_state_t *state);
+error_type_t tank_monitor_get_config(const tank_monitor_t *monitor, tank_monitor_config_t *config);
 error_type_t tank_monitor_check_level(tank_monitor_t *monitor);
 error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id);
 error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id);
