@@ -33,6 +33,11 @@ error_type_t pump_init(pump_t *pump){
     if (pump == NULL || pump->config == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null pump or configuration
     }
+
+    // validate the configuration
+    if (pump->config->id < 0 || pump->config->power_in_hp < 0.0 || pump->config->make == NULL) {
+        return SYSTEM_INVALID_PARAMETER; // Handle invalid configuration
+    }
     
     if (pump->state != PUMP_NOT_INITIALIZED) {
         return SYSTEM_INVALID_STATE; // Pump is already initialized
@@ -73,7 +78,7 @@ error_type_t pump_destroy(pump_t **pump){
     return SYSTEM_OK;
 }
 
-error_type_t pump_get_state(pump_t *pump, pump_state_t *state){
+error_type_t pump_get_state(const pump_t *pump, pump_state_t *state){
     if (pump == NULL || state == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null pump or state pointer
     }
@@ -85,7 +90,7 @@ error_type_t pump_get_state(pump_t *pump, pump_state_t *state){
 }
 
 
-error_type_t pump_get_config(pump_t *pump, pump_config_t *config){
+error_type_t pump_get_config(const pump_t *pump, pump_config_t *config){
     if (pump == NULL || config == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null pump or configuration pointer
     }

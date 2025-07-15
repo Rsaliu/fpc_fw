@@ -24,7 +24,7 @@ pump_t* pump_create(pump_config_t config);
 error_type_t pump_init(pump_t *pump);
 error_type_t pump_deinit(pump_t *pump);
 error_type_t pump_destroy(pump_t **pump);
-error_type_t pump_get_state(pump_t *pump, pump_state_t *state);
-error_type_t pump_get_config(pump_t *pump, pump_config_t *config);
+error_type_t pump_get_state(const pump_t *pump, pump_state_t *state);
+error_type_t pump_get_config(const pump_t *pump, pump_config_t *config);
 
 #endif
