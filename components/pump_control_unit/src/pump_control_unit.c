@@ -26,14 +26,14 @@ error_type_t pump_monitor_get_config(pump_monitor_t *monitor, pump_monitor_confi
 }
 
 //dummy relay_get_config function
-error_type_t relay_get_config(relay_t *relay, relay_config_t *config) {
-    if (relay == NULL || config == NULL) {
-        return SYSTEM_NULL_PARAMETER; // Handle null relay or configuration pointer
-    }
-    config->id = relay->id; // Assuming relay_t has an id field
-    config->pin_number = relay->pin_number; // Assuming relay_t has a pin_number field
-    return SYSTEM_OK;
-}
+// error_type_t relay_get_config(relay_t *relay, relay_config_t *config) {
+//     if (relay == NULL || config == NULL) {
+//         return SYSTEM_NULL_PARAMETER; // Handle null relay or configuration pointer
+//     }
+//     config->id = relay->id; // Assuming relay_t has an id field
+//     config->pin_number = relay->pin_number; // Assuming relay_t has a pin_number field
+//     return SYSTEM_OK;
+// }
 
 struct pump_control_unit_t {
     HashMap pump_monitors_map; // HashMap to store pump monitors
@@ -224,7 +224,7 @@ error_type_t pump_control_unit_add_relay(pump_control_unit_t *manager, relay_t *
     if(emhashmap_contains(&manager->relays_map, config.id)) {
         return SYSTEM_INVALID_PARAMETER; // Tank monitor with this ID already exists
     }
-    if (!emhashmap_put(&manager->relays_map, relay->pin_number, (void*)relay)){
+    if (!emhashmap_put(&manager->relays_map, config.relay_pin_number , (void*)relay)){
         return SYSTEM_BUFFER_OVERFLOW; // Handle error in adding to the map
     }
 

@@ -6,18 +6,19 @@
 #include <event.h>
 #include <stdbool.h>
 #include <emhashmap.h>
+#include <relay_driver.h>
 
-// dummy relay object
-typedef struct {
-    int id; // Unique identifier for the relay
-    int pin_number; // GPIO pin number
-} relay_t;
+// // dummy relay object
+// typedef struct {
+//     int id; // Unique identifier for the relay
+//     int pin_number; // GPIO pin number
+// } relay_t;
 
 // relay configuration object
-typedef struct {
-    int id; // Unique identifier for the relay
-    int pin_number; // GPIO pin number
-} relay_config_t;
+// typedef struct {
+//     int id; // Unique identifier for the relay
+//     int pin_number; // GPIO pin number
+// } relay_config_t;
 
 
 //dummy current sensor object

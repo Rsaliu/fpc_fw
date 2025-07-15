@@ -131,9 +131,9 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_add_relay") {
     pumpControlUnitSetUp();
     error_type_t result = pump_control_unit_init(pump_control_unit);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    relay_t *relay = (relay_t *)malloc(sizeof(relay_t));
+    relay_config_t relay_config = {.id = 1, .relay_pin_number = 1};
+    relay_t *relay = relay_create(&relay_config);
     TEST_ASSERT_NOT_NULL(relay);
-    relay->pin_number = 1; // Example pin number
     
     result = pump_control_unit_add_relay(pump_control_unit, relay);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
@@ -147,9 +147,9 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_remove_relay") {
     pumpControlUnitSetUp();
     error_type_t result = pump_control_unit_init(pump_control_unit);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    relay_t *relay = (relay_t *)malloc(sizeof(relay_t));
+    relay_config_t relay_config = {.id = 1, .relay_pin_number = 1};
+    relay_t *relay = relay_create(&relay_config);
     TEST_ASSERT_NOT_NULL(relay);
-    relay->pin_number = 1; // Example pin number
     
     result = pump_control_unit_add_relay(pump_control_unit, relay);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
@@ -166,9 +166,10 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_get_relay_by_id") {
     pumpControlUnitSetUp();
     error_type_t result = pump_control_unit_init(pump_control_unit);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    relay_t *relay = (relay_t *)malloc(sizeof(relay_t));
+    relay_config_t relay_config = {.id = 1, .relay_pin_number = 1};
+    relay_t *relay = relay_create(&relay_config);
     TEST_ASSERT_NOT_NULL(relay);
-    relay->pin_number = 1; // Example pin number
+
     
     result = pump_control_unit_add_relay(pump_control_unit, relay);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
@@ -250,10 +251,10 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
 
     // Add a relay
-    relay_t *relay = (relay_t *)malloc(sizeof(relay_t));
+    relay_config_t relay_config = {.id = 1, .relay_pin_number = 1};
+    relay_t *relay = relay_create(&relay_config);
     TEST_ASSERT_NOT_NULL(relay);
-    relay->pin_number = 1; // Example pin number
-    relay->id = 1; // Example relay ID
+
     result = pump_control_unit_add_relay(pump_control_unit, relay);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
 
