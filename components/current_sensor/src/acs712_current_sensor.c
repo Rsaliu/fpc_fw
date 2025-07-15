@@ -251,7 +251,7 @@ error_type_t acs712_calibrate_zero(acs712_sensor_t *sensor, float *zero_voltage)
         ESP_LOGE(TAG, "ADC calibration failed: %s", esp_err_to_name(err));
         return SYSTEM_OPERATION_FAILED;
     }
-    *zero_voltage = voltage_mv / 1000.0f; // mV to V
+    *zero_voltage = voltage_mv / 1000.0f; 
     sensor->zero_voltage = *zero_voltage;
 
     ESP_LOGI(TAG, "Calibrated zero voltage: %.2f V", *zero_voltage);
