@@ -110,8 +110,8 @@ error_type_t tank_print_info(tank_t *tank) {
 printf("ID: %d\n", tank->config->id);
 printf("Capacity:%.2f\n",tank->config->capacity_in_liters);
 printf("Height:%.2f\n",tank->config->height_in_cm);
-printf("Full level: %d\n", tank->config->full_level_in_cm);
-printf("Low level: %d\n", tank->config->low_level_in_cm);
+printf("Full level: %d\n", tank->config->full_level_in_mm);
+printf("Low level: %d\n", tank->config->low_level_in_mm);
 printf("Shape: %s\n", shape_to_string(tank->config->shape));
     return SYSTEM_OK; // Assuming you define ERROR_NONE in your enum
 }
@@ -121,8 +121,8 @@ error_type_t tank_print_info_to_buffer(tank_t *tank, char* buffer, const size_t 
         tank->config->id,
         tank->config->capacity_in_liters,
         tank->config->height_in_cm,
-        tank->config->low_level_in_cm,
-        tank->config->full_level_in_cm,
+        tank->config->low_level_in_mm,
+        tank->config->full_level_in_mm,
         shape_to_string(tank->config->shape));
 if (written >= 0 && (size_t)written < buffer_size) {
     return SYSTEM_BUFFER_OVERFLOW;
