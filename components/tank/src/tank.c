@@ -28,7 +28,13 @@ error_type_t tank_init(tank_t *tank){
     if (tank == NULL || tank->config == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null tank or configuration
     }
-
+    // Validate the tank configuration
+    if (tank->config->id < 0 || tank->config->capacity_in_liters < 0.0 || 
+        (tank->config->shape != TANK_SHAPE_RECTANGLE && tank->config->shape != TANK_SHAPE_CYLINDER) ||
+        tank->config->height_in_cm <= 0 || tank->config->full_level_in_mm < 0 || 
+        tank->config->low_level_in_mm < 0 || tank->config->full_level_in_mm <= tank->config->low_level_in_mm) {
+        return SYSTEM_INVALID_PARAMETER; // Handle invalid configuration
+    }
     if (tank->state != TANK_NOT_INITIALIZED) {
         return SYSTEM_INVALID_STATE; // Tank is already initialized
     }
@@ -69,7 +75,7 @@ error_type_t tank_destroy(tank_t **tank){
 
     return SYSTEM_OK;
 }
-error_type_t tank_get_config(tank_t *tank, tank_config_t *config){
+error_type_t tank_get_config(const tank_t *tank, tank_config_t *config){
     if (tank == NULL || config == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null tank or configuration pointer
     }
@@ -80,7 +86,7 @@ error_type_t tank_get_config(tank_t *tank, tank_config_t *config){
     return SYSTEM_OK;
 }
 
-error_type_t tank_get_state(tank_t *tank, tank_state_t *state){
+error_type_t tank_get_state(const tank_t *tank, tank_state_t *state){
     if (tank == NULL || state == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null tank or state pointer
     }

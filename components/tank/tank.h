@@ -27,7 +27,7 @@ tank_t* tank_create(tank_config_t config);
 error_type_t tank_init(tank_t *tank);
 error_type_t tank_deinit(tank_t *tank);
 error_type_t tank_destroy(tank_t **tank);
-error_type_t tank_get_config(tank_t *tank, tank_config_t *config);
-error_type_t tank_get_state(tank_t *tank, tank_state_t *state);
+error_type_t tank_get_config(const tank_t *tank, tank_config_t *config);
+error_type_t tank_get_state(const tank_t *tank, tank_state_t *state);
 
 #endif //__TANK_LIBRARY_H__
