@@ -23,9 +23,9 @@ typedef enum{
 
 
 typedef struct{
+    int id; // Unique identifier for the tank monitor
     tank_t *tank; // Pointer to the tank being monitored
     level_sensor_t *sensor; // Pointer to the level sensor
-    void (*event_callback)(tank_state_machine_state_t state); // Callback for when the tank is full
 }tank_monitor_config_t;
 
 typedef enum {
@@ -34,6 +34,13 @@ typedef enum {
 } tank_monitor_state_t;
 
 typedef struct tank_monitor_t tank_monitor_t;
+typedef void (*tank_monitor_event_callback_t)(void* context,int actuator_id, event_type_t state,int monitor_id);
+
+typedef struct {
+    void *context; // Context for the callback, can be used to pass additional data
+    int actuator_id; // Action ID for the event
+    tank_monitor_event_callback_t callback; // Callback function for the subscriber
+} tank_monitor_event_hook_t;
 
 tank_monitor_t* tank_monitor_create(tank_monitor_config_t config);
 error_type_t tank_monitor_init(tank_monitor_t *monitor);
@@ -42,5 +49,7 @@ error_type_t tank_monitor_destroy(tank_monitor_t **monitor);
 error_type_t tank_monitor_get_state(tank_monitor_t *monitor, tank_monitor_state_t *state);
 error_type_t tank_monitor_get_config(tank_monitor_t *monitor, tank_monitor_config_t *config);
 error_type_t tank_monitor_check_level(tank_monitor_t *monitor);
+error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id);
+error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id);
 
 #endif // __TANK_MONITOR_H__
