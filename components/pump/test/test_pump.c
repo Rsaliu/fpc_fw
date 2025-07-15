@@ -73,3 +73,16 @@ TEST_CASE("pump_test", "test_pump_get_config") {
     TEST_ASSERT_EQUAL_STRING("Test Pump", config.make);
     TEST_ASSERT_EQUAL_FLOAT(5.0, config.power_in_hp);
 }
+
+// test invalid configurations
+TEST_CASE("pump_test", "test_pump_init_invalid_config") {
+    //setUp();
+    pump_config_t invalid_config = {-1, NULL, -5.0}; // Invalid configuration
+    pump_t *invalid_pump = pump_create(invalid_config);
+    TEST_ASSERT_NOT_NULL(invalid_pump);
+    
+    error_type_t result = pump_init(invalid_pump);
+    TEST_ASSERT_EQUAL(SYSTEM_INVALID_PARAMETER, result); // Expecting invalid parameter error
+    
+    pump_destroy(&invalid_pump);
+}
