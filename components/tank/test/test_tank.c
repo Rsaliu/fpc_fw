@@ -77,3 +77,13 @@ TEST_CASE("tank_test", "test_tank_get_config") {
     tankTearDown();
 }
 
+//test invalid tank configuration
+TEST_CASE("tank_test", "test_tank_init_invalid_config") {
+    tank_config_t config = {-1, -1000.0, TANK_SHAPE_RECTANGLE, -100.0, -90, -10}; // Invalid configuration
+    tank = tank_create(config);
+    TEST_ASSERT_NOT_NULL(tank);
+    error_type_t result = tank_init(tank);
+    TEST_ASSERT_EQUAL(SYSTEM_INVALID_PARAMETER, result); // Expecting invalid parameter error
+    tankTearDown();
+}
+
