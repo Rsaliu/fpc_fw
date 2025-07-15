@@ -90,3 +90,37 @@ error_type_t tank_get_state(tank_t *tank, tank_state_t *state){
     
     return SYSTEM_OK;
 }
+// Convert tank shape enum to string
+const char* shape_to_string(tank_shape_t shape) {
+    switch (shape) {
+        case TANK_SHAPE_CYLINDER: return "Cylinder";
+        case TANK_SHAPE_RECTANGLE: return "Rectangle";
+        default: return "Unknown";
+    }
+}
+
+// Print all tank details
+error_type_t tank_print_info(tank_t *tank) {
+printf("ID: %d\n", tank->config->id);
+printf("Capacity:%.2f\n",tank->config->capacity_in_liters);
+printf("Height:%.2f\n",tank->config->height_in_cm);
+printf("Full level: %d\n", tank->config->full_level_in_cm);
+printf("Low level: %d\n", tank->config->low_level_in_cm);
+printf("Shape: %s\n", shape_to_string(tank->config->shape));
+    return SYSTEM_OK; // Assuming you define ERROR_NONE in your enum
+}
+error_type_t tank_print_info_to_buffer(tank_t *tank, char* buffer, const size_t buffer_size){
+    int written = snprintf(buffer, buffer_size,
+        "Tank ID: %d\n Capacity: %.2f liters\n Height: %.2f cm\n Low Level: %d cm\nHigh Level: %d cm\nShape: %s\n",
+        tank->config->id,
+        tank->config->capacity_in_liters,
+        tank->config->height_in_cm,
+        tank->config->low_level_in_cm,
+        tank->config->full_level_in_cm,
+        shape_to_string(tank->config->shape));
+if (written >= 0 && (size_t)written < buffer_size) {
+    return SYSTEM_BUFFER_OVERFLOW;
+} else {
+    return SYSTEM_OK;
+}
+}
