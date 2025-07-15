@@ -21,6 +21,7 @@ void app_main(void)
     unity_run_test_by_name("pump_test");
     unity_run_test_by_name("level_sensor_test");
     unity_run_test_by_name("rs485_test");
+    unity_run_test_by_name("relay_test");
     UNITY_END();
 }
 
