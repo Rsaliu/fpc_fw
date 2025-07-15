@@ -1,6 +1,7 @@
 #ifndef __TANK_LIBRARY_H__
 #define __TANK_LIBRARY_H__
 #include <common_headers.h>
+#include <stddef.h>
 typedef enum{
     TANK_SHAPE_RECTANGLE = 0,
     TANK_SHAPE_CYLINDER = 1,
@@ -29,5 +30,9 @@ error_type_t tank_deinit(tank_t *tank);
 error_type_t tank_destroy(tank_t **tank);
 error_type_t tank_get_config(const tank_t *tank, tank_config_t *config);
 error_type_t tank_get_state(const tank_t *tank, tank_state_t *state);
+error_type_t tank_print_info(tank_t *tank);
+error_type_t tank_print_info_to_buffer(tank_t *tank, char* buffer, const size_t buffer_size); // For storing formatted output in buffer
 
-#endif //__TANK_LIBRARY_H__
+// Function prototypes
+const char* shape_to_string(tank_shape_t shape);
+#endif // TANK_P

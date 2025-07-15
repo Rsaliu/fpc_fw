@@ -87,3 +87,22 @@ TEST_CASE("tank_test", "test_tank_init_invalid_config") {
     tankTearDown();
 }
 
+TEST_CASE("tank_test", "test_tank_print_into_buffer") {
+    tankSetUp();
+    error_type_t err = tank_init(tank);
+    TEST_ASSERT_EQUAL(err,SYSTEM_OK);
+    char * expected_buffer_content="Tank ID: 1\n Capacity: 1000.00 liters\n Height: 100.00 cm\n Low Level: 10 cm\nHigh Level: 90 cm\nShape: Rectangle\n";
+
+    char buffer[256];
+    err = tank_print_info_to_buffer(tank,buffer,256);
+    printf("expected ouput %s\n",expected_buffer_content); 
+    printf("actual ouput %s\n",buffer);
+    // Assert that the returned string is not NULL (if that's an error condition)
+    int result = strcmp(buffer,expected_buffer_content);
+    TEST_ASSERT_EQUAL(result,0);
+
+
+
+    tankTearDown();
+}
+
