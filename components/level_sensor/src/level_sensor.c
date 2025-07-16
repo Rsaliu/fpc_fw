@@ -8,7 +8,7 @@
 struct level_sensor_t
 {
     int id; 
-    rs485_config_t rs485;
+    rs485_t* rs485;
     bool activate;
 };
 
@@ -33,7 +33,13 @@ error_type_t level_sensor_init(level_sensor_t* level_sensor_obj){
     return SYSTEM_OK;
 }
 
+error_type_t level_sensor_write(level_sensor_t* level_sensor_obj){
+    if( level_sensor_obj == NULL){
+        return SYSTEM_NULL_PARAMETER;
+    }
 
+ return SYSTEM_OK;
+}
 
 
 error_type_t level_sensor_deinit(level_sensor_t* level_sensor_obj){
