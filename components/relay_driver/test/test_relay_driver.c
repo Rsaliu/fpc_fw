@@ -6,13 +6,13 @@
 
 relay_t *relay = NULL;
 
-void setUp(void) {
-    // Setup before each test
+void relaySetUp(void) {
+    // relaySetup before each test
     relay_config_t config = { .relay_pin_number = 5 }; // Replace with valid GPIO
     relay = relay_create(&config);
 }
 
-void tearDown(void) {
+void relayTearDown(void) {
     // Cleanup after each test
     if (relay != NULL) {
         relay_destroy(&relay);
@@ -20,14 +20,14 @@ void tearDown(void) {
 }
 
 TEST_CASE("relay_test", "test_relay_create") {
-    setUp();
+    relaySetUp();
     TEST_ASSERT_NOT_NULL(relay);
     printf("relay create sucessful");
-    tearDown();
+    relayTearDown();
 }
 
 TEST_CASE("relay_test", "test_relay_init") {
-    setUp();
+    relaySetUp();
     error_type_t result = relay_init(relay);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     relay_state_t state;
@@ -35,11 +35,11 @@ TEST_CASE("relay_test", "test_relay_init") {
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_EQUAL(RELAY_OFF, state);
     printf("relay init sucessful");
-    tearDown();
+    relayTearDown();
 }
 
 TEST_CASE("relay_test", "test_relay_deinit") {
-    setUp();
+    relaySetUp();
     error_type_t result = relay_init(relay);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     relay_state_t state = RELAY_ON; 
@@ -50,11 +50,11 @@ TEST_CASE("relay_test", "test_relay_deinit") {
     result = relay_check_state(relay,&state);
     TEST_ASSERT_EQUAL(SYSTEM_INVALID_STATE, result);
     printf("relay deinit sucessful");
-    tearDown();
+    relayTearDown();
 }
 
 TEST_CASE("relay_test", "test_relay_switch") {
-    setUp();
+    relaySetUp();
     error_type_t result;
     result = relay_init(relay);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
@@ -72,12 +72,12 @@ TEST_CASE("relay_test", "test_relay_switch") {
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_EQUAL(RELAY_OFF, state);
     printf("switch off sucessful");
-    tearDown();
+    relayTearDown();
 }
 
 TEST_CASE("relay_test", "test_relay_destroy") {
-    setUp();
-    tearDown();
+    relaySetUp();
+    relayTearDown();
     TEST_ASSERT_NULL(relay);
 }
 
@@ -89,11 +89,11 @@ TEST_CASE("relay_test", "test_relay_get_config") {
     TEST_ASSERT_EQUAL(err,SYSTEM_OK);
     TEST_ASSERT_EQUAL(config.id,read_config.id);
     TEST_ASSERT_EQUAL(config.relay_pin_number,config.relay_pin_number);
-    tearDown();
+    relayTearDown();
 }
 
 // TEST_CASE("relay_test", "test_relay_check_state") {
-//     setUp();
+//     relaySetUp();
 //     relay_init(relay);
 //     relay_switch(relay, RELAY_ON);
 //     relay_state_t state = RELAY_OFF;
@@ -101,11 +101,11 @@ TEST_CASE("relay_test", "test_relay_get_config") {
 //     error_type_t result = relay_check_state(relay, &state);
 //     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
 //     TEST_ASSERT_EQUAL(RELAY_ON, state);
-//     tearDown();
+//     relayTearDown();
 // }
 
 // TEST_CASE("relay_test", "test_relay_destroy") {
-//     setUp();
+//     relaySetUp();
 //     error_type_t result = relay_destroy(&relay);
 //     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
 //     TEST_ASSERT_NULL(relay);
