@@ -4,7 +4,7 @@
 
 ## Updating repo with submodule
 
-- use `git submodule --update --init --recursive`
+- use `git submodule update --init --recursive`
 
 ## Assumptions
 

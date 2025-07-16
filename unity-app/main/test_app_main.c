@@ -19,6 +19,8 @@ void app_main(void)
     print_banner("Running all the registered tests");
     UNITY_BEGIN();
     unity_run_test_by_name("pump_test");
+    unity_run_test_by_name("level_sensor_test");
+    unity_run_test_by_name("rs485_test");
     unity_run_test_by_name("tank_test");
     unity_run_test_by_name("tank_monitor_test");
     unity_run_test_by_name("pump_control_unit_test");
