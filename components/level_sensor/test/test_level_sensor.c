@@ -10,7 +10,7 @@ level_sensor_t* level_Sensor = NULL;
 void level_sensor_setup(void){
     rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
     rs485_t* rs485 = rs485_create(&rs485_config);
-    level_sensor_config_t config = {4,&rs485};
+    level_sensor_config_t config = {4,rs485};
     level_Sensor = level_sensor_create(&config);
 }
 
