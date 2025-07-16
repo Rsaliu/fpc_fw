@@ -25,15 +25,6 @@ error_type_t pump_monitor_get_config(pump_monitor_t *monitor, pump_monitor_confi
     return SYSTEM_OK;
 }
 
-//dummy relay_get_config function
-// error_type_t relay_get_config(relay_t *relay, relay_config_t *config) {
-//     if (relay == NULL || config == NULL) {
-//         return SYSTEM_NULL_PARAMETER; // Handle null relay or configuration pointer
-//     }
-//     config->id = relay->id; // Assuming relay_t has an id field
-//     config->pin_number = relay->pin_number; // Assuming relay_t has a pin_number field
-//     return SYSTEM_OK;
-// }
 
 struct pump_control_unit_t {
     HashMap pump_monitors_map; // HashMap to store pump monitors
@@ -352,6 +343,9 @@ error_type_t pump_control_unit_remove_relay_from_tank_monitor(pump_control_unit_
     free(grp); // Free the group memory
     return SYSTEM_OK;
 }
+
+// code commented out for now till current sensor is implemented
+
 // error_type_t pump_control_unit_add_relay_to_pump_monitor(pump_control_unit_t *manager, int pump_monitor_id, int relay_id)
 // {
 //     if (manager == NULL) {

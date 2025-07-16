@@ -8,17 +8,6 @@
 #include <emhashmap.h>
 #include <relay_driver.h>
 
-// // dummy relay object
-// typedef struct {
-//     int id; // Unique identifier for the relay
-//     int pin_number; // GPIO pin number
-// } relay_t;
-
-// relay configuration object
-// typedef struct {
-//     int id; // Unique identifier for the relay
-//     int pin_number; // GPIO pin number
-// } relay_config_t;
 
 
 //dummy current sensor object
@@ -39,16 +28,6 @@ typedef struct{
     pump_t *pump; // Pointer to the tank being monitored
     current_sensor_t *current_sensor; // Pointer to the level sensor
 }pump_monitor_config_t;
-
-// // dummy pump monitor event callback function
-// typedef void (*pump_monitor_event_callback_t)(void* context,int actuator_id, event_type_t state,int monitor_id);
-
-// dummmy pump monitor event hook
-// typedef struct {
-//     void *context; // Context for the callback, can be used to pass additional data
-//     int actuator_id; // Action ID for the event
-//     pump_monitor_event_callback_t callback; // Callback function for the subscriber
-// } pump_monitor_event_hook_t;
 
 
 typedef struct pump_control_unit_t  pump_control_unit_t;
