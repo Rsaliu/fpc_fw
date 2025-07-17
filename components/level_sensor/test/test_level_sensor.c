@@ -8,9 +8,9 @@ level_sensor_t* level_Sensor = NULL;
 
 
 void level_sensor_setup(void){
-    rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
-    rs485_t* rs485 = rs485_create(&rs485_config);
-    level_sensor_config_t config = {4,rs485};
+    protocol_callback_t protocol;
+    transport_medium_t send;
+    level_sensor_config_t config = {4,0x01,protocol,send};
     level_Sensor = level_sensor_create(&config);
 }
 
@@ -37,8 +37,15 @@ TEST_CASE("level_sensor_test", "test_level_sensor_init"){
     level_sensor_tearDown();
 }
 
+TEST_CASE("level_sensor_test", "test_level_sensor_read"){
+    level_sensor_setup();
+    error_type_t test_result;
+    test_result = level_sensor_read(level_Sensor);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
+    printf("read buffer byte sucessfully");
+    level_sensor_tearDown();
 
-
+}
 
 TEST_CASE("level_sensor_test", "test_level_sensor_deinit"){
     level_sensor_setup();
