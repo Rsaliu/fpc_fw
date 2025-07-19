@@ -11,7 +11,7 @@
 
 static const char *TAG = "wifi_hotspot";
 
-struct wifi_hotspot_t
+enum wifi_hotspot_t
 {
     wifi_hotspot_config_t config;
     bool is_initialized;
@@ -58,7 +58,7 @@ static esp_err_t map_auth_mode(wifi_hotspot_auth_mode_t auth_mode, wifi_auth_mod
 wifi_hotspot_t *wifi_hotspot_create(wifi_hotspot_config_t config)
 {
 
-    if (config.ssid[0] == '\0' || strlen(config.ssid) > 31)
+   if (strlen(config.ssid) == 0 || strlen(config.ssid) > 31) 
     {
         ESP_LOGE(TAG, "Invalid SSID");
         return NULL;
