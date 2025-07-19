@@ -19,5 +19,6 @@ typedef enum
     SYSTEM_BUSY,
     SYSTEM_OPERATION_FAILED,
     SYSTEM_INVALID_RESPONSE,
+    SYSTEM_OUT_OF_RANGE
 } error_type_t;
 #endif // __COMMON_HEADERS_H__
