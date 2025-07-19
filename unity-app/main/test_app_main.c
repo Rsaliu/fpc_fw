@@ -18,7 +18,10 @@ void app_main(void)
 
     print_banner("Running all the registered tests");
     UNITY_BEGIN();
-    unity_run_test_by_name("acs712_test");
+    unity_run_test_by_name("adc_reader_test");
+    unity_run_test_by_name("acs712_current_sensor_test");
+    unity_run_test_by_name("current_sensor_test");
+    unity_run_test_by_name("ads1115_test");
     UNITY_END();
 }
 
