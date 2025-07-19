@@ -1,3 +1,11 @@
+## Cloning repo
+
+- use `git clone --recursive https://github.com/Rsaliu/fpc_fw.git`
+
+## Updating repo with submodule
+
+- use `git submodule update --init --recursive`
+
 ## Assumptions
 
 - You have vscode installed
