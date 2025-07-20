@@ -52,11 +52,6 @@ error_type_t ads1115_init(ads1115_t* ads){
         .flags.enable_internal_pullup = ads->config->enable_pullup,
     }; 
     esp_err_t err;
-    //  err = i2c_driver_install(ads->config->i2c_port , I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM);
-    // if (err != ESP_OK) {
-    //     ESP_LOGE(TAG, "I2C driver install failed: %s", esp_err_to_name(err));
-    //     return SYSTEM_OPERATION_FAILED; // Handle I2C bus creation failure
-    // }
      err = i2c_new_master_bus(&bus_config, &ads->i2c_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "I2C bus creation failed: %s", esp_err_to_name(err));
@@ -77,46 +72,6 @@ error_type_t ads1115_init(ads1115_t* ads){
     return SYSTEM_OK; // Successfully initialized the ADS1115
 }
 
-// static error_type_t reset_internal_registers_and_power_down(ads1115_t* ads) {
-//     static const uint8_t RESET_CMD = 0x06; // Reset command for ADS1115
-//     if (ads == NULL) {
-//         return SYSTEM_NULL_PARAMETER; // Handle null ADS1115
-//     }
-//     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-//     esp_err_t err = i2c_master_start(cmd);
-//     if (err != ESP_OK) {
-//         ESP_LOGE(TAG, "I2C start failed: %s", esp_err_to_name(err));
-//         i2c_cmd_link_delete(cmd);
-//         return SYSTEM_OPERATION_FAILED; // Handle I2C start failure
-//     }
-//     err = i2c_master_write_byte(cmd, 0, true); // Write the reset command
-//     if (err != ESP_OK) {
-//         ESP_LOGE(TAG, "I2C write failed: %s", esp_err_to_name(err));
-//         i2c_cmd_link_delete(cmd);
-//         return SYSTEM_OPERATION_FAILED; // Handle I2C write failure
-//     }
-
-//     err = i2c_master_write_byte(cmd, RESET_CMD, true); // Write the reset command
-//     if (err != ESP_OK) {
-//         ESP_LOGE(TAG, "I2C write failed: %s", esp_err_to_name(err));
-//         i2c_cmd_link_delete(cmd);
-//         return SYSTEM_OPERATION_FAILED; // Handle I2C write failure
-//     }
-//     err = i2c_master_stop(cmd);
-//     if (err != ESP_OK) {
-//         ESP_LOGE(TAG, "I2C stop failed: %s", esp_err_to_name(err));
-//         i2c_cmd_link_delete(cmd);
-//         return SYSTEM_OPERATION_FAILED; // Handle I2C stop failure
-//     }
-//     err = i2c_master_cmd_begin(ads->config->i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
-//     if( err != ESP_OK) {
-//         ESP_LOGE(TAG, "I2C command failed: %s", esp_err_to_name(err));
-//         i2c_cmd_link_delete(cmd);
-//         return SYSTEM_OPERATION_FAILED; // Handle I2C command failure
-//     }
-//     i2c_cmd_link_delete(cmd); // Delete the command link after use
-//     return SYSTEM_OK; // Successfully reset the internal registers
-// }
 
 static error_type_t reset_internal_registers_and_power_down(ads1115_t* ads){
     if (ads == NULL) {

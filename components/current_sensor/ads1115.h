@@ -71,16 +71,6 @@ typedef enum{
 }ads1115_comp_queue_t;
 
 
-    // uint8_t os :1;
-    // uint8_t mux :3;
-    // uint8_t pga :3;
-    // uint8_t mode :1;
-    // uint8_t dr :3;
-    // uint8_t comp_mode :1;
-    // uint8_t comp_pol :1;
-    // uint8_t comp_lat :1;
-    // uint8_t comp_que :2;
-
 typedef enum{
     ADDR_GROUNDED = 0x48, // Grounded address
     ADDR_VCC = 0x49, // VCC address

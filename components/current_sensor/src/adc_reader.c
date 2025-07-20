@@ -37,7 +37,6 @@ error_type_t adc_reader_init(adc_reader_t* adc_reader){
 
     adc_oneshot_unit_init_cfg_t init_config = {
         .unit_id = adc_reader->config->adc_unit_id,
-        //.bitwidth = adc_reader->config->adc_bitwidth,
     };
 
     esp_err_t err = adc_oneshot_new_unit(&init_config, &adc_reader->adc_handle);
