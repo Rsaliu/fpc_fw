@@ -7,17 +7,20 @@
 #include "nvs_flash.h"
 #include "esp_mac.h"
 
-
-
 static const char *TAG = "wifi_hotspot";
 
-enum wifi_hotspot_t
+typedef enum
+{
+    WIFI_HOTSPOT_STATE_UNINITIALIZED = 0,
+    WIFI_HOTSPOT_STATE_INITIALIZED,
+    WIFI_HOTSPOT_STATE_RUNNING
+} wifi_hotspot_state_t;
+
+struct wifi_hotspot_t
 {
     wifi_hotspot_config_t config;
-    bool is_initialized;
-    bool is_running;
+    wifi_hotspot_state_t state;
 };
-
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
@@ -58,9 +61,9 @@ static esp_err_t map_auth_mode(wifi_hotspot_auth_mode_t auth_mode, wifi_auth_mod
 wifi_hotspot_t *wifi_hotspot_create(wifi_hotspot_config_t config)
 {
 
-   if (strlen(config.ssid) == 0 || strlen(config.ssid) > 31) 
+    if (strlen(config.ssid) == 0 || strlen(config.ssid) > 31)
     {
-        ESP_LOGE(TAG, "Invalid SSID");
+        ESP_LOGE(TAG, "Invalid SSID length");
         return NULL;
     }
     if (config.auth_mode != WIFI_HOTSPOT_AUTH_OPEN && (strlen(config.password) < 8 || strlen(config.password) > 63))
@@ -93,46 +96,46 @@ wifi_hotspot_t *wifi_hotspot_create(wifi_hotspot_config_t config)
     }
 
     wifi_hotspot->config = config;
-    wifi_hotspot->is_initialized = false;
-    wifi_hotspot->is_running = false;
+    wifi_hotspot->state = WIFI_HOTSPOT_STATE_UNINITIALIZED;
 
     return wifi_hotspot;
 }
 
 error_type_t wifi_hotspot_init(wifi_hotspot_t *wifi_hotspot)
 {
-    if (!wifi_hotspot) {
+    if (!wifi_hotspot)
+    {
         ESP_LOGE(TAG, "Null hotspot pointer");
         return SYSTEM_NULL_PARAMETER;
     }
-    if (wifi_hotspot->is_initialized) {
+    if (wifi_hotspot->state != WIFI_HOTSPOT_STATE_UNINITIALIZED)
+    {
         ESP_LOGE(TAG, "Hotspot already initialized");
         return SYSTEM_INVALID_STATE;
     }
 
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
-    if (ret != ESP_OK) {
+    if (ret != ESP_OK)
+    {
         ESP_LOGE(TAG, "NVS init failed: %s", esp_err_to_name(ret));
         return SYSTEM_OPERATION_FAILED;
     }
-
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_ap();
 
-   
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-  
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
-    
-    wifi_hotspot->is_initialized = true;
+
+    wifi_hotspot->state = WIFI_HOTSPOT_STATE_INITIALIZED;
     ESP_LOGI(TAG, "Hotspot initialized");
     return SYSTEM_OK;
 }
@@ -143,16 +146,16 @@ error_type_t wifi_hotspot_deinit(wifi_hotspot_t *wifi_hotspot)
         ESP_LOGE(TAG, "Null hotspot pointer");
         return SYSTEM_NULL_PARAMETER;
     }
-    if (!wifi_hotspot->is_initialized)
+    if (wifi_hotspot->state == WIFI_HOTSPOT_STATE_UNINITIALIZED)
     {
         ESP_LOGE(TAG, "Hotspot not initialized");
         return SYSTEM_INVALID_STATE;
     }
 
-    if (wifi_hotspot->is_running)
+    if (wifi_hotspot->state == WIFI_HOTSPOT_STATE_RUNNING)
     {
         ESP_ERROR_CHECK(esp_wifi_stop());
-        wifi_hotspot->is_running = false;
+        wifi_hotspot->state = WIFI_HOTSPOT_STATE_INITIALIZED;
     }
 
     ESP_ERROR_CHECK(esp_wifi_deinit());
@@ -164,7 +167,7 @@ error_type_t wifi_hotspot_deinit(wifi_hotspot_t *wifi_hotspot)
         esp_netif_destroy(netif);
     }
 
-    wifi_hotspot->is_initialized = false;
+    wifi_hotspot->state = WIFI_HOTSPOT_STATE_UNINITIALIZED;
     ESP_LOGI(TAG, "Hotspot deinitialized");
     return SYSTEM_OK;
 }
@@ -177,7 +180,7 @@ error_type_t wifi_hotspot_destroy(wifi_hotspot_t **wifi_hotspot)
         return SYSTEM_NULL_PARAMETER;
     }
 
-    if ((*wifi_hotspot)->is_initialized)
+    if ((*wifi_hotspot)->state != WIFI_HOTSPOT_STATE_UNINITIALIZED)
     {
         error_type_t ret = wifi_hotspot_deinit(*wifi_hotspot);
         if (ret != SYSTEM_OK)
@@ -194,26 +197,28 @@ error_type_t wifi_hotspot_destroy(wifi_hotspot_t **wifi_hotspot)
 
 error_type_t wifi_hotspot_on(wifi_hotspot_t *wifi_hotspot)
 {
-    if (!wifi_hotspot) {
+    if (!wifi_hotspot)
+    {
         ESP_LOGE(TAG, "Null hotspot pointer");
         return SYSTEM_NULL_PARAMETER;
     }
-    if (!wifi_hotspot->is_initialized) {
+    if (wifi_hotspot->state == WIFI_HOTSPOT_STATE_UNINITIALIZED)
+    {
         ESP_LOGE(TAG, "Hotspot not initialized");
         return SYSTEM_INVALID_STATE;
     }
-    if (wifi_hotspot->is_running) {
+    if (wifi_hotspot->state == WIFI_HOTSPOT_STATE_RUNNING)
+    {
         ESP_LOGE(TAG, "Hotspot already running");
         return SYSTEM_INVALID_STATE;
     }
 
-   
     wifi_auth_mode_t esp_auth_mode;
-    if (map_auth_mode(wifi_hotspot->config.auth_mode, &esp_auth_mode) != ESP_OK) {
+    if (map_auth_mode(wifi_hotspot->config.auth_mode, &esp_auth_mode) != ESP_OK)
+    {
         ESP_LOGE(TAG, "Invalid auth mode");
         return SYSTEM_INVALID_PARAMETER;
     }
-
 
     wifi_config_t wifi_config = {
         .ap = {
@@ -229,9 +234,10 @@ error_type_t wifi_hotspot_on(wifi_hotspot_t *wifi_hotspot)
 #endif
         },
     };
-    strncpy((char*)wifi_config.ap.ssid, wifi_hotspot->config.ssid, 32);
-    strncpy((char*)wifi_config.ap.password, wifi_hotspot->config.password, 64);
-    if (strlen(wifi_hotspot->config.password) == 0) {
+    strncpy((char *)wifi_config.ap.ssid, wifi_hotspot->config.ssid, 32);
+    strncpy((char *)wifi_config.ap.password, wifi_hotspot->config.password, 64);
+    if (strlen(wifi_hotspot->config.password) == 0)
+    {
         wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     }
 
@@ -239,7 +245,7 @@ error_type_t wifi_hotspot_on(wifi_hotspot_t *wifi_hotspot)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    wifi_hotspot->is_running = true;
+    wifi_hotspot->state = WIFI_HOTSPOT_STATE_RUNNING;
     ESP_LOGI(TAG, "Hotspot started. SSID:%s channel:%d", wifi_hotspot->config.ssid, wifi_hotspot->config.channel);
     return SYSTEM_OK;
 }
@@ -251,22 +257,19 @@ error_type_t wifi_hotspot_off(wifi_hotspot_t *wifi_hotspot)
         ESP_LOGE(TAG, "Null hotspot pointer");
         return SYSTEM_NULL_PARAMETER;
     }
-    if (!wifi_hotspot->is_initialized)
+    if (wifi_hotspot->state == WIFI_HOTSPOT_STATE_UNINITIALIZED)
     {
         ESP_LOGE(TAG, "Hotspot not initialized");
         return SYSTEM_INVALID_STATE;
     }
-    if (!wifi_hotspot->is_running)
+    if (wifi_hotspot->state != WIFI_HOTSPOT_STATE_RUNNING)
     {
         ESP_LOGE(TAG, "Hotspot not running");
         return SYSTEM_INVALID_STATE;
     }
 
     ESP_ERROR_CHECK(esp_wifi_stop());
-    wifi_hotspot->is_running = false;
+    wifi_hotspot->state = WIFI_HOTSPOT_STATE_INITIALIZED;
     ESP_LOGI(TAG, "Hotspot stopped");
     return SYSTEM_OK;
 }
-
-
-
