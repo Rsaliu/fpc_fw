@@ -142,3 +142,17 @@ TEST_CASE("tank_monitor_test", "test_tank_monitor_unsubscribe_event") {
     
     tankMonitorTearDown();
 }
+
+TEST_CASE("tank_mointor_test", "test_tank_monitor_print_info_into_buffer"){
+    tankMonitorSetUp();
+    error_type_t result; 
+    result = tank_monitor_init(monitor);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    char* expected_buffer_content = "Tank ID: 3\n Actuator ID: 4\n  ";
+    
+    char buffer[256];
+    result = tank_mointor_print_info_into_buffer(monitor, &test_hook, buffer, 256);
+    printf("Expected ouput %s\n",expected_buffer_content); 
+    printf("Actual ouput %s\n",buffer);
+    tankMonitorTearDown();
+}
