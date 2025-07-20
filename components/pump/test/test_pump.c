@@ -86,3 +86,17 @@ TEST_CASE("pump_test", "test_pump_init_invalid_config") {
     
     pump_destroy(&invalid_pump);
 }
+
+TEST_CASE("pump_test", "test_pump_print_info_into_buffer"){
+    setUp();
+    error_type_t result; 
+    result = pump_init(pump);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    char* expected_buffer_content = "Pump ID: 1\n Pump Make: test pump\n HP Power: 5.00hp \n ";
+    
+    char buffer[256];
+    result = pump_print_info_into_buffer(pump, buffer, 256);
+    printf("Expected ouput %s\n",expected_buffer_content); 
+    printf("Actual ouput %s\n",buffer);
+    tearDown();
+}

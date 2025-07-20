@@ -100,3 +100,22 @@ error_type_t pump_get_config(const pump_t *pump, pump_config_t *config){
     
     return SYSTEM_OK;
 }
+
+error_type_t pump_print_info(pump_t* pump){
+    printf("ID: %d\n", pump->config->id);
+    printf("Make: %s\n", pump->config->make);
+    printf("HP-Power: %f\n", pump->config->power_in_hp);
+    printf("State: %d\n", pump->state);
+    return SYSTEM_OK;
+}
+
+error_type_t pump_print_info_into_buffer(pump_t* pump, char* buffer, const size_t buffer_size){
+    int written = snprintf(buffer, buffer_size, "Pump ID: %d\n Pump Make: %s\n HP Power: %f\n State: %d\n",
+        pump->config->id, pump->config->make, pump->config->power_in_hp, pump->state);
+        if (written >= 0 && (size_t)written < buffer_size)
+        {
+            return SYSTEM_BUFFER_OVERFLOW;
+        }
+
+        return SYSTEM_OK;       
+}
