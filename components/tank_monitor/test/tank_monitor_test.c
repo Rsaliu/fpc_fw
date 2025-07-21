@@ -149,10 +149,10 @@ TEST_CASE("tank_monitor_test", "test_tank_monitor_print_info_into_buffer"){
     result = tank_monitor_init(monitor);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
                                     
-    char* expected_buffer_content = "Tank ID: 1\n Actuator ID: 1\n State: 1\n";
+    char* expected_buffer_content = "Tank ID: 1\n Subsciber Count: 0\n State: 1\n";
     
     char buffer[256];
-    result = tank_monitor_print_info_into_buffer(monitor, &test_hook, buffer, 256);
+    result = tank_monitor_print_info_into_buffer(monitor,buffer, 256);
     TEST_ASSERT_EQUAL(SYSTEM_OK,result);
     printf("lenght of expected: %d\n",strlen(expected_buffer_content));
     printf("lenght of actual: %d\n",strlen(buffer));
