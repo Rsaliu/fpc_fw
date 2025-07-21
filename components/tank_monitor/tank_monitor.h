@@ -52,7 +52,7 @@ error_type_t tank_monitor_get_config(const tank_monitor_t *monitor, tank_monitor
 error_type_t tank_monitor_check_level(tank_monitor_t *monitor);
 error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id);
 error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id);
-error_type_t tank_monitor_print_info(tank_monitor_t* monitor,  tank_monitor_event_hook_t* hook);
-error_type_t tank_monitor_print_info_into_buffer(tank_monitor_t* monitor, tank_monitor_event_hook_t* hook, char* buffer, const size_t buffer_size);
+error_type_t tank_monitor_print_info(tank_monitor_t* monitor);
+error_type_t tank_monitor_print_info_into_buffer(tank_monitor_t* monitor, char* buffer, const size_t buffer_size);
 
 #endif // __TANK_MONITOR_H__

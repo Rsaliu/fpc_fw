@@ -251,16 +251,16 @@ error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_print_info(tank_monitor_t* monitor, tank_monitor_event_hook_t* hook){
+error_type_t tank_monitor_print_info(tank_monitor_t* monitor){
     printf("Tank ID: %d\n", monitor->config->id);
-    printf("Actuator ID: %d\n", hook->actuator_id);
+    printf("Subscriber Count: %d\n",monitor->subscriber_count );
     printf("State: %d\n", monitor->state);
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_print_info_into_buffer(tank_monitor_t* monitor, tank_monitor_event_hook_t* hook, char* buffer, const size_t buffer_size){
-    int written = snprintf(buffer,buffer_size, "Tank ID: %d\n Actuator ID: %d\n State: %d\n",
-       monitor->config->id, hook->actuator_id,monitor->state);
+error_type_t tank_monitor_print_info_into_buffer(tank_monitor_t* monitor,char* buffer, const size_t buffer_size){
+    int written = snprintf(buffer,buffer_size, "Tank ID: %d\n Subsciber Count: %d\n State: %d\n",
+       monitor->config->id, monitor->subscriber_count,monitor->state);
        if (written < 0)return SYSTEM_OPERATION_FAILED;
        
        if ((size_t)written > buffer_size)
