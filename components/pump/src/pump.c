@@ -112,7 +112,8 @@ error_type_t pump_print_info(pump_t* pump){
 error_type_t pump_print_info_into_buffer(pump_t* pump, char* buffer, const size_t buffer_size){
     int written = snprintf(buffer, buffer_size, "Pump ID: %d\n Pump Make: %s\n HP Power: %f\n State: %d\n",
         pump->config->id, pump->config->make, pump->config->power_in_hp, pump->state);
-        if (written >= 0 && (size_t)written < buffer_size)
+        if(written < 0)return SYSTEM_OPERATION_FAILED;
+        if ((size_t)written > buffer_size)
         {
             return SYSTEM_BUFFER_OVERFLOW;
         }
