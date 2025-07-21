@@ -92,11 +92,16 @@ TEST_CASE("pump_test", "test_pump_print_info_into_buffer"){
     error_type_t result; 
     result = pump_init(pump);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    char* expected_buffer_content = "Pump ID: 1\n Pump Make: test pump\n HP Power: 5.00hp \n ";
+    char* expected_buffer_content = "Pump ID: 1\n Pump Make: Test Pump\n HP Power: 5.000000\n State: 3\n";
     
     char buffer[256];
     result = pump_print_info_into_buffer(pump, buffer, 256);
-    printf("Expected ouput %s\n",expected_buffer_content); 
-    printf("Actual ouput %s\n",buffer);
+    TEST_ASSERT_EQUAL(SYSTEM_OK,result);
+    printf("lenght of expected: %d\n",strlen(expected_buffer_content));
+    printf("lenght of actual: %d\n",strlen(buffer));
+    printf("\nExpected ouput:\n %s\n",expected_buffer_content); 
+    printf("\nActual ouput:\n %s\n",buffer);
+    int value = strcmp(buffer, expected_buffer_content);
+    TEST_ASSERT_EQUAL(value,0);
     tearDown();
 }
