@@ -1,0 +1,42 @@
+    .header {
+      background-color: lightblue;
+      color: black;
+      padding: 40px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: left;
+      gap: 20px;
+    }
+
+    .header img {
+      vertical-align: middle;
+    }
+    
+  
+input[type="text"],
+input[type="password"],
+input[type="submit"],
+select {
+  width: 50%;
+   font-size: 1rem;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+   
+   div {
+	 border-radius: 5px;
+     padding: 20px;
+   }
+   
+	  .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px;
+	 
+    }
