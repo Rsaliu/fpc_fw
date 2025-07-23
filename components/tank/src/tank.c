@@ -124,9 +124,12 @@ error_type_t tank_print_info_to_buffer(tank_t *tank, char* buffer, const size_t 
         tank->config->low_level_in_mm,
         tank->config->full_level_in_mm,
         shape_to_string(tank->config->shape));
-if (written >= 0 && (size_t)written < buffer_size) {
-    return SYSTEM_BUFFER_OVERFLOW;
-} else {
-    return SYSTEM_OK;
-}
+    if (written < 0)return SYSTEM_OPERATION_FAILED;
+        
+    if ((size_t)written > buffer_size) {
+        return SYSTEM_BUFFER_OVERFLOW;
+    }
+    
+return SYSTEM_OK;
+    
 }
