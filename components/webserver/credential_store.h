@@ -7,6 +7,7 @@
 #define SALT_LEN     16
 #define HASH_LEN     32
 #define PBKDF2_ITERS 100000
+#define REGISTERED_USER_FLAG "registered_user"
 
 #include "esp_err.h"
 #include "esp_system.h"
@@ -34,5 +35,6 @@ int derive_hash(const uint8_t *pwd, size_t pwd_len,
 bool ct_equal(const uint8_t *a, const uint8_t *b, size_t n);
 esp_err_t auth_store_set(const char *username, const char *password);
 bool auth_store_check(const char *username, const char *password);
-
+esp_err_t get_user_registered_flag(bool* is_registered);
+esp_err_t set_user_registered_flag(void);
 #endif // ___CREDENTIAL_STORE_H___
