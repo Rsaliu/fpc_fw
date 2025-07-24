@@ -10,7 +10,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "unity.h"
-
+#include "esp_netif.h"
+#include "nvs_flash.h"
+#include "esp_log.h"
+#include "esp_event.h"
 static void print_banner(const char* text);
 
 void app_main(void)
@@ -18,6 +21,10 @@ void app_main(void)
 
     print_banner("Running all the registered tests");
     UNITY_BEGIN();
+    unity_run_test_by_name("adc_reader_test");
+    unity_run_test_by_name("acs712_current_sensor_test");
+    unity_run_test_by_name("current_sensor_test");
+    unity_run_test_by_name("ads1115_test");
     unity_run_test_by_name("pump_test");
     unity_run_test_by_name("level_sensor_test");
     unity_run_test_by_name("rs485_test");
@@ -27,6 +34,8 @@ void app_main(void)
     unity_run_test_by_name("relay_test");
     unity_run_test_by_name("protocol_test");
     unity_run_test_by_name("crc_test");
+    unity_run_test_by_name("webserver_test");
+    unity_run_test_by_name("wifi_hotspot_test");
     UNITY_END();
 }
 

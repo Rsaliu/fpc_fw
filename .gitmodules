@@ -1,3 +1,6 @@
 [submodule "third_party/emhashmap"]
 	path = third_party/emhashmap
 	url = https://github.com/openxc/emhashmap.git
+[submodule "third_party/esp-protocols"]
+	path = third_party/esp-protocols
+	url = https://github.com/espressif/esp-protocols.git
