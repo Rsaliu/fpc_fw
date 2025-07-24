@@ -4,6 +4,8 @@
 #include "mbedtls/pkcs5.h"
 #include "esp_random.h"
 #include "esp_err.h"
+
+const int REGISTERED_FLAG =  0x69;
 const char *CREDENTIAL_STORE_TAG = "CREDENTIAL_STORE";
 int derive_hash(const uint8_t *pwd, size_t pwd_len,
                        const uint8_t *salt, size_t salt_len,
@@ -79,4 +81,46 @@ bool auth_store_check(const char *username, const char *password)
     bool ok = ct_equal(test_hash, rec.hash, HASH_LEN);
     mbedtls_platform_zeroize(test_hash, sizeof(test_hash));
     return ok;
+}
+
+esp_err_t get_user_registered_flag(bool* is_registered){
+    nvs_handle_t h;
+    uint8_t flag;
+    size_t len = sizeof(flag);
+    esp_err_t err;
+    if (is_registered == NULL) return ESP_ERR_INVALID_ARG; // Handle null pointer
+    err = nvs_open(AUTH_NS, NVS_READONLY, &h);
+    if( err!= ESP_OK){
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "Failed to open NVS namespace %s: %s", AUTH_NS, esp_err_to_name(err));
+        return err;
+    } 
+    err = nvs_get_blob(h, REGISTERED_USER_FLAG, &flag, &len);
+    nvs_close(h);
+    if(err != ESP_OK) {
+        ESP_LOGI(CREDENTIAL_STORE_TAG, "Failed to get user registration flag: %s, but will now store it", esp_err_to_name(err));
+        *is_registered = false; // User not registered
+        return ESP_OK; // No error, but user not registered
+    }
+
+    if(!len) {
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "User registration flag length is zero");
+        return ESP_ERR_INVALID_SIZE;
+    }
+    ESP_LOGI(CREDENTIAL_STORE_TAG, "User registration flag: %d", flag);
+    *is_registered = (flag == REGISTERED_FLAG);
+    return ESP_OK; // User registration status retrieved successfully
+}
+
+esp_err_t set_user_registered_flag(void){
+    nvs_handle_t h;
+    uint8_t flag = REGISTERED_FLAG;
+    esp_err_t err = nvs_open(AUTH_NS, NVS_READWRITE, &h);
+    if (err != ESP_OK) {
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "Failed to open NVS namespace %s: %s", AUTH_NS, esp_err_to_name(err));
+        return err;
+    }
+    err = nvs_set_blob(h, REGISTERED_USER_FLAG, &flag, sizeof(flag));
+    if (err == ESP_OK) err = nvs_commit(h);
+    nvs_close(h);
+    return err;
 }
