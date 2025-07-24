@@ -24,10 +24,10 @@ void level_sensor_setup(void){
     protocol_callback_t protocol = protocol_gl_a01_read_level;
     send_receive_t send_receive =  dummy_context_Send_receive;
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
-    level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01,.protocol= protocol, .medium_context = rs485, 
+    level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485, 
                                        .send_recive = send_receive,
                                        .interpreter = interpret };
-    level_Sensor = level_sensor_create(&config);
+    level_Sensor = level_sensor_create(config);
 }
 
 void level_sensor_tearDown(void){
