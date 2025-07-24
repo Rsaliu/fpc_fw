@@ -20,7 +20,7 @@ typedef struct
 }level_sensor_config_t;
 
 
-level_sensor_t* level_sensor_create(const level_sensor_config_t* config);
+level_sensor_t* level_sensor_create(level_sensor_config_t config);
 error_type_t level_sensor_init(level_sensor_t* level_sensor_obj);
 error_type_t level_sensor_read(level_sensor_t* level_sensor_obj);
 error_type_t level_sensor_destroy(level_sensor_t** level_sensor_obj);

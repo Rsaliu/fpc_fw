@@ -7,37 +7,31 @@
 
 struct level_sensor_t
 {
-    int id; 
-    uint8_t sensor_addr;
-    protocol_callback_t protocol;
-    void* medium_context;
-    send_receive_t send_recive;
-    protocol_interpreter_t interpreter;
+    level_sensor_config_t* config;
     bool activate;
 };
 static const int sensor_buffer_size = 50;
 static const int receive_buff_size = 100;
 
-level_sensor_t* level_sensor_create(const level_sensor_config_t* config){
-    if (config == NULL)
+level_sensor_t* level_sensor_create(level_sensor_config_t config){
+    
+    level_sensor_t* level_sensor_obj = (level_sensor_t*)malloc(sizeof(level_sensor_t));
+    if (!level_sensor_obj) return NULL;
+
+    level_sensor_obj->config = (level_sensor_config_t*)malloc(sizeof(level_sensor_config_t));
+    if (level_sensor_obj->config == NULL)
     {
         return NULL;
     }
-
-    level_sensor_t* level_sensor_obj = (level_sensor_t*)malloc(sizeof(level_sensor_t));
-    level_sensor_obj->id = config->id;
-    level_sensor_obj->sensor_addr = config->sensor_addr;
-    level_sensor_obj->protocol = config->protocol;
-    level_sensor_obj->medium_context = config->medium_context;
-     level_sensor_obj->send_recive = config->send_recive;
-    level_sensor_obj->interpreter = config->interpreter;
+    
+    memcpy(level_sensor_obj->config, &config, sizeof(level_sensor_config_t));
     level_sensor_obj->activate = false;
 
     return level_sensor_obj;   
 }
 
 error_type_t level_sensor_init(level_sensor_t* level_sensor_obj){
-    if(level_sensor_obj == NULL)return SYSTEM_NULL_PARAMETER;
+    if(level_sensor_obj == NULL || level_sensor_obj->config == NULL)return SYSTEM_NULL_PARAMETER;
     if(level_sensor_obj->activate)return SYSTEM_INVALID_STATE;
     level_sensor_obj->activate = true;
     return SYSTEM_OK;
@@ -57,7 +51,7 @@ error_type_t level_sensor_read(level_sensor_t* level_sensor_obj){
     error_type_t err;
 
     printf("Calling protocol()...\n");
-    err = level_sensor_obj->protocol(level_sensor_obj->sensor_addr, buffer,sensor_buffer_size,  &payload_size);
+    err = level_sensor_obj->config->protocol(level_sensor_obj->config->sensor_addr, buffer,sensor_buffer_size,  &payload_size);
     printf("Protocol returned %d, payload_size=%d\n", err, payload_size);
     if (err != SYSTEM_OK)
     {
@@ -68,7 +62,7 @@ error_type_t level_sensor_read(level_sensor_t* level_sensor_obj){
     for(int x=0; x< payload_size;x++){
         printf("payload[%d]: %x\n",x,buffer[x]);
     }
-    err = level_sensor_obj->send_recive(level_sensor_obj->medium_context, buffer, payload_size,receive_buff,&receive_payload);
+    err = level_sensor_obj->config->send_recive(level_sensor_obj->config->medium_context, buffer, payload_size,receive_buff,&receive_payload);
     if (err != SYSTEM_OK
     )
     {
@@ -78,7 +72,7 @@ error_type_t level_sensor_read(level_sensor_t* level_sensor_obj){
     for(int x=0; x< receive_payload;x++){
         printf("received[%d]: %x\n",x,receive_buff[x]);
     }
-    err = level_sensor_obj->interpreter(receive_buff, receive_payload,&data);
+    err = level_sensor_obj->config->interpreter(receive_buff, receive_payload,&data);
     if (err != SYSTEM_OK)
     {
         printf("failed to interepret protocol\n");
