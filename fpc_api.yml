@@ -3,7 +3,7 @@ info:
   title: API Title
   version: '1.0'
 servers:
-  - url: http://192.168.4.1
+  - url: http://fpc-webserver.local
     description: Local ESP32 Webserver
 paths:
   /dummy:
