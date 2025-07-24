@@ -1,0 +1,78 @@
+openapi: '3.0.3'
+info:
+  title: API Title
+  version: '1.0'
+servers:
+  - url: http://192.168.4.1
+    description: Local ESP32 Webserver
+paths:
+  /dummy:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Dummy response
+
+  /register:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password1:
+                  type: string
+                password2:
+                  type: string
+      responses:
+        '200':
+          description: Registration successful
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Registration successful
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Invalid input data
+
+  /login:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Login successful
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Invalid credentials
