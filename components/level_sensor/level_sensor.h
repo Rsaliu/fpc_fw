@@ -5,16 +5,18 @@
 #include <stddef.h>
 typedef struct level_sensor_t level_sensor_t;
 
-typedef error_type_t (*protocol_callback_t)(uint8_t addr,uint8_t buf_size, uint8_t* buffer, uint8_t* payload_size);
-typedef error_type_t(*transport_medium_t)(uint8_t* buffer, uint8_t buff_size);
-
+typedef error_type_t (*protocol_callback_t)( uint8_t slave_addr, uint8_t* buffer, int buff_size, uint8_t* payload_size);
+typedef error_type_t(*send_receive_t)(void* context, uint8_t* send_buff, int send_buff_size, uint8_t* receive_buff, int* receive_buff_size);
+typedef error_type_t(*protocol_interpreter_t)(uint8_t* buffer, int buff_size, uint16_t* sensor_data);
  
 typedef struct 
 {
     int id;   
     uint8_t sensor_addr;
     protocol_callback_t protocol;
-    transport_medium_t send;
+    void* medium_context;
+    send_receive_t send_recive;
+    protocol_interpreter_t interpreter;
 }level_sensor_config_t;
 
 
