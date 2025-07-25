@@ -12,13 +12,7 @@
 
 const char *TAG = "WEBSERVER";
 const int RESERVED_SOCKETS = 3; // Number of reserved sockets for internal use
-#define SCRATCH_BUFSIZE (10240)
-//const int SCRATCH_BUFSIZE = 10240; // Size of the scratch buffer for HTTP server
 
-typedef struct rest_server_context {
-    char base_path[ESP_VFS_PATH_MAX + 1];
-    char scratch[SCRATCH_BUFSIZE];
-} rest_server_context_t;
 
 typedef enum{
     WEBSERVER_NOT_INITIALIZED = 0, // Web server is not initialized
@@ -34,7 +28,7 @@ struct webserver_t {
     httpd_config_t httpd_config; // HTTP server configuration
     webserver_state_t status; // Current state of the web server
 };
-
+static esp_err_t options_handler(httpd_req_t *req);
 webserver_t* webserver_create(const webserver_config_t* config){
     if (config == NULL) {
         return NULL; // Handle null configuration
@@ -199,7 +193,19 @@ error_type_t webserver_start(webserver_t* server){
         ESP_LOGE(TAG, "Failed to start HTTP server: %s", esp_err_to_name(ret));
         return SYSTEM_OPERATION_FAILED; // Handle HTTP server start failure
     }
-
+    // Register the OPTIONS handler for CORS support
+    // static httpd_uri_t options_uri = {
+    //     .uri = "/*", // Match all URIs
+    //     .method = HTTP_OPTIONS,
+    //     .handler = options_handler,
+    //     .user_ctx = NULL
+    // };
+    // ret = httpd_register_uri_handler(server->server, &options_uri);
+    // if (ret != ESP_OK) {
+    //     ESP_LOGE(TAG, "Failed to register OPTIONS handler: %s", esp_err_to_name(ret));
+    //     httpd_stop(server->server); // Stop the server if registration fails
+    //     return SYSTEM_OPERATION_FAILED; // Handle OPTIONS handler registration failure
+    // }
     server->status = WEBSERVER_RUNNING; // Set the status to running
     ESP_LOGI(TAG, "Web server started successfully");
     return SYSTEM_OK;
@@ -307,3 +313,33 @@ error_type_t webserver_remove_route(webserver_t* server,const char* uri,httpd_me
     ESP_LOGI(TAG, "Route removed successfully: %s", uri);
     return SYSTEM_OK;
 }
+
+error_type_t webserver_get_scratch_buffer(webserver_t* server, char** buffer, size_t* size){
+    if (server == NULL || server->rest_context == NULL || buffer == NULL || size == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null parameters
+    }
+    if (server->status != WEBSERVER_RUNNING) {
+        return SYSTEM_INVALID_STATE; // Web server is not running
+    }
+
+    *buffer = server->rest_context->scratch;
+    *size = SCRATCH_BUFSIZE; // Set the size of the scratch buffer
+    ESP_LOGI(TAG, "Scratch buffer retrieved successfully");
+    return SYSTEM_OK;
+}
+
+static void add_cors_headers(httpd_req_t *req)
+{
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin",  "*");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type, Authorization");
+    httpd_resp_set_hdr(req, "Access-Control-Max-Age",       "3600");
+}
+
+
+static esp_err_t options_handler(httpd_req_t *req)
+{
+    add_cors_headers(req);
+    return httpd_resp_send(req, NULL, 0); // 204 by default
+}
+

@@ -12,6 +12,8 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include <register_handler.h>
+#include <login_handler.h>
 
 const char * WEBSERVER_TEST_TAG = "WEBSERVER_TEST";
 
@@ -20,8 +22,8 @@ webserver_t* webserver = NULL;
 webserver_config_t webserver_config = {
     .port = 80, // Port number for the web server
     .max_connections = 4, // Maximum number of concurrent connections
-    .mdns_instance = "ESP32-WebServer", // MDNS instance name
-    .mdns_hostname = "esp32-webserver", // MDNS hostname
+    .mdns_instance = "FPC-WebServer", // MDNS instance name
+    .mdns_hostname = "fpc-webserver", // MDNS hostname
     .base_path = "/spiffs", // Base path for the web server
     .web_mount_point = "/web", // Web mount point for serving files
     .web_partition_label = "spiffs" // Partition label for the web server
@@ -217,6 +219,31 @@ TEST_CASE("webserver_test", "test_webserver_add_dummy_route") {
     };
 
     result = webserver_add_route(webserver, &uri);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    error_type_t get_scratch_result;
+    char *scratch_buffer = NULL;
+    size_t scratch_size = 0;
+    get_scratch_result = webserver_get_scratch_buffer(webserver, &scratch_buffer, &scratch_size);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, get_scratch_result);
+    TEST_ASSERT_NOT_NULL(scratch_buffer);
+    httpd_uri_t uri2 = {
+        .uri = "/register",
+        .method = HTTP_POST,
+        .handler = register_handler,
+        .user_ctx = (void*)scratch_buffer,
+    };
+
+    result = webserver_add_route(webserver, &uri2);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+
+    httpd_uri_t uri3 = {
+        .uri = "/login",
+        .method = HTTP_POST,
+        .handler = login_handler,
+        .user_ctx = (void*)scratch_buffer,
+    };
+
+    result = webserver_add_route(webserver, &uri3);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
 
     webserverTearDown();
