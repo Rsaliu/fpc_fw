@@ -8,7 +8,7 @@
 
 
 void rs485_setup(void){
-    rs485_config_t config ={2,17,16,4,9600};
+    rs485_config_t config ={2,17,16,22,9600};
     rs485 = rs485_create(&config);
 }
 
