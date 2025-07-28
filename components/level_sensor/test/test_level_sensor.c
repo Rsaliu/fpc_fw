@@ -5,9 +5,12 @@
 #include <protocol.h>
 #include <rs485_context.h>
 #include <rs485.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "unity.h"
 
 level_sensor_t* level_Sensor = NULL;
+rs485_t *rs485_obj;
 
 static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff,int send_buff_size,
     uint8_t *receive_buff,int *receive_buff_size)
@@ -19,12 +22,13 @@ static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff
 }
 
 void level_sensor_setup(void){
-    rs485_config_t rs485_config = {2,17,16,4,9600};
-    rs485_t *rs485 = rs485_create(&rs485_config);
+    rs485_config_t rs485_config = {2,17,16,22,9600};
+    rs485_obj = rs485_create(&rs485_config);
+    error_type_t err = rs485_init(rs485_obj);
     protocol_callback_t protocol = protocol_gl_a01_read_level;
     send_receive_t send_receive =  dummy_context_Send_receive;
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
-    level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485, 
+    level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
                                        .send_recive = send_receive,
                                        .interpreter = interpret };
     level_Sensor = level_sensor_create(config);
@@ -56,9 +60,11 @@ TEST_CASE("level_sensor_test", "test_level_sensor_init"){
 TEST_CASE("level_sensor_test", "test_level_sensor_read"){
     level_sensor_setup();
     error_type_t test_result;
+    int level_read_data;
     test_result = level_sensor_init(level_Sensor);
-    test_result = level_sensor_read(level_Sensor);
+    test_result = level_sensor_read(level_Sensor, &level_read_data);
     TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
+    printf("level data: %d\n", level_read_data);
     printf("read buffer byte sucessfully");
     level_sensor_tearDown();
 
@@ -80,3 +86,33 @@ TEST_CASE("level_sensor_test", "test_level_sensor_destroy"){
     printf("destroy is sucessful");
     TEST_ASSERT_NULL(level_Sensor);
 }
+
+void real_level_sensor_setup(void){
+    protocol_callback_t protocol = protocol_gl_a01_read_level;
+    send_receive_t send_receive =  rs485_context_send_receive;
+    protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
+    level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, 
+                                       .medium_context = rs485_obj, 
+                                       .send_recive = send_receive,
+                                       .interpreter = interpret };
+    level_Sensor = level_sensor_create(config);
+}
+
+
+TEST_CASE("level_sensor_test", "test_real_level_sensor_setup"){
+    real_level_sensor_setup();
+    error_type_t test_result;
+    int level_read_data;
+    test_result = level_sensor_init(level_Sensor);
+    for (;;) // forever for loop
+    {
+        test_result = level_sensor_read(level_Sensor, &level_read_data);
+        TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
+        printf("level data: %dmm\n", level_read_data);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+    
+    level_sensor_tearDown();
+
+}
+
