@@ -72,8 +72,8 @@ TEST_CASE("protocol_test","test_protocol_gl_a01_interpreter"){
     uint8_t buffer[] = { 0x01, 0x03, 0x02, 0x02, 0xF2, 0x38, 0xA1};
     int buff_size = sizeof(buffer);
 
-    uint16_t sensor_data = 754;
-    uint16_t expected_data;
+    int sensor_data = 754;
+    int expected_data;
     err = protocol_gl_a01_interpreter(buffer, buff_size, &expected_data);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     TEST_ASSERT_EQUAL(expected_data, sensor_data);
