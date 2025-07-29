@@ -41,7 +41,7 @@ error_type_t level_sensor_init(level_sensor_t *level_sensor_obj)
     return SYSTEM_OK;
 }
 
-error_type_t level_sensor_read(level_sensor_t *level_sensor_obj, int *read_level)
+error_type_t level_sensor_read(level_sensor_t *level_sensor_obj, uint16_t* read_level)
 {
     if (level_sensor_obj == NULL)
     {
