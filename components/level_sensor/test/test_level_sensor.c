@@ -22,7 +22,7 @@ static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff
 }
 
 void level_sensor_setup(void){
-    rs485_config_t rs485_config = {2,17,16,22,9600};
+    rs485_config_t rs485_config = {2,17,16,4,9600};
     rs485_obj = rs485_create(&rs485_config);
     error_type_t err = rs485_init(rs485_obj);
     if (err != SYSTEM_OK) {
