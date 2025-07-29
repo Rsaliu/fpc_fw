@@ -64,7 +64,7 @@ error_type_t protocol_gl_a01_read_temp(uint8_t slave_addr, uint8_t* temp_buffer,
     
 }
 
-error_type_t protocol_gl_a01_interpreter( uint8_t* buffer, int buffer_Size, int* sensor_data){
+error_type_t protocol_gl_a01_interpreter( uint8_t* buffer, int buffer_Size, uint16_t* sensor_data){
 
     uint16_t calculated_crc = MODBUS_CRC16_v3(buffer,buffer_Size-2);
     printf("calculated crc: %x\n", calculated_crc);

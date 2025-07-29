@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
+const int send_buffer_size = 7;
 error_type_t rs485_context_send_receive(void *context, uint8_t *send_buff, int send_buff_size,
                                         uint8_t *receive_buff, int *receive_buff_size)
 {
@@ -27,7 +29,7 @@ error_type_t rs485_context_send_receive(void *context, uint8_t *send_buff, int s
         return SYSTEM_INVALID_PARAMETER;
     }
     
-    send_buff_size = 7;
+    send_buff_size = send_buffer_size;
     err = rs485_read(sender, (char *)receive_buff, send_buff_size, receive_buff_size);
     if (err != SYSTEM_OK)
     {
