@@ -89,33 +89,35 @@ TEST_CASE("level_sensor_test", "test_level_sensor_destroy"){
     printf("destroy is sucessful");
     TEST_ASSERT_NULL(level_Sensor);
 }
+ 
+// on comment when  you are using it with the level sensor Hardware  
 
-void real_level_sensor_setup(void){
-    protocol_callback_t protocol = protocol_gl_a01_read_level;
-    send_receive_t send_receive =  rs485_context_send_receive;
-    protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
-    level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, 
-                                       .medium_context = rs485_obj, 
-                                       .send_recive = send_receive,
-                                       .interpreter = interpret };
-    level_Sensor = level_sensor_create(config);
-}
+// void real_level_sensor_setup(void){
+//     protocol_callback_t protocol = protocol_gl_a01_read_level;
+//     send_receive_t send_receive =  rs485_context_send_receive;
+//     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
+//     level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, 
+//                                        .medium_context = rs485_obj, 
+//                                        .send_recive = send_receive,
+//                                        .interpreter = interpret };
+//     level_Sensor = level_sensor_create(config);
+// }
 
 
-TEST_CASE("level_sensor_test", "test_real_level_sensor_setup"){
-    real_level_sensor_setup();
-    error_type_t test_result;
-    uint16_t level_read_data;
-    test_result = level_sensor_init(level_Sensor);
-    for (;;) // forever for loop
-    {
-        test_result = level_sensor_read(level_Sensor, &level_read_data);
-        TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
-        printf("level data: %dmm\n", level_read_data);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
+// TEST_CASE("level_sensor_test", "test_real_level_sensor_setup"){
+//     real_level_sensor_setup();
+//     error_type_t test_result;
+//     uint16_t level_read_data;
+//     test_result = level_sensor_init(level_Sensor);
+//     for (;;) // forever for loop
+//     {
+//         test_result = level_sensor_read(level_Sensor, &level_read_data);
+//         TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
+//         printf("level data: %dmm\n", level_read_data);
+//         vTaskDelay(1000 / portTICK_PERIOD_MS);
+//     }
     
-    level_sensor_tearDown();
+//     level_sensor_tearDown();
 
-}
+// }
 
