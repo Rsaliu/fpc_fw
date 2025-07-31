@@ -4,6 +4,9 @@
 #include <crc.h>
 #include "unity.h"
 #include <string.h>
+#include "esp_log.h"
+
+static const char* TAG = "PROTOCOL";
 
 void protocolSetup(void) {
     // Set up code before each test
@@ -24,9 +27,9 @@ TEST_CASE("protocol_test", "test_protocol_gl_a01_write_address"){
     TEST_ASSERT_EQUAL(SYSTEM_OK,err);
     TEST_ASSERT_EQUAL(0, memcmp(expected_buffer, buffer, sizeof(expected_buffer)));
      for (int i = 0; i < buffer_size; i++) {
-            printf("buffer[%d]: %02X\n",i,buffer[i]);
+            ESP_LOGI(TAG,"buffer[%d]: %02X",i,buffer[i]);
     }
-    printf("write address was successful\n");
+    ESP_LOGI(TAG,"write address was successful\n");
     protocoltearDown();
 }
 
@@ -42,9 +45,9 @@ TEST_CASE("protocol_test", "test_protocol_gl_a01_read_level"){
     TEST_ASSERT_EQUAL(8, payload_size);
     TEST_ASSERT_EQUAL(0, memcmp(expected_buffer, buffer, sizeof(expected_buffer)));
     for (int i = 0; i < buffer_size; i++) {
-            printf("buffer[%d]: %02X\n",i,buffer[i]);
+            ESP_LOGI(TAG,"buffer[%d]: %02X",i,buffer[i]);
     }
-    printf(" read protocol was successful\n");
+    ESP_LOGI(TAG," read protocol was successful\n");
     protocoltearDown();
 }
 
@@ -58,9 +61,9 @@ TEST_CASE("protocol_test", "test_protocol_gl_a01_read_temp"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     TEST_ASSERT_EQUAL(0, memcmp(expected_buffer, buffer, sizeof(expected_buffer)));
     for (int i = 0; i < buffer_size; i++) {
-            printf("buffer[%d]: %02X\n",i,buffer[i]);
+            ESP_LOGI(TAG,"buffer[%d]: %02X",i,buffer[i]);
     }
-    printf("read temperature protocol is sucessful\n");
+    ESP_LOGI(TAG,"read temperature protocol is sucessful\n");
     protocoltearDown();
 
 }

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "unity.h"
+#include "esp_log.h"
 
 void crcSetup(void) {
     // Set up code before each test
@@ -10,6 +11,8 @@ void crcSetup(void) {
 void crctearDown(void) {
     // Clean up code after each test
 }
+
+static const char* CRC_TAG = "CRC";
 
 TEST_CASE("crc_test", "test_crc"){
     crcSetup();
@@ -21,9 +24,8 @@ TEST_CASE("crc_test", "test_crc"){
     uint8_t expected_lsb = buff[6];  
     uint8_t expected_msb = buff[7]; 
     TEST_ASSERT_EQUAL(result_msb, expected_msb);
-    printf("result msb: 0x%X\n", result_msb);
+    ESP_LOGI(CRC_TAG, "result msb: 0x%X",result_msb );
     TEST_ASSERT_EQUAL(result_lsb, expected_lsb);
-    printf("result lsb: 0x%X\n", result_lsb);
-
+    ESP_LOGI(CRC_TAG, "result lsb: 0x%X", result_lsb);
     crctearDown();
 }

@@ -5,6 +5,7 @@
 #include <string.h>
 #include "driver/uart.h"
 #include "driver/gpio.h"
+#include "esp_log.h"
 
 
 #define BUF_SIZE    (127)
@@ -18,6 +19,8 @@ struct rs485_t
     int baud_rate;
     bool activate;
 };
+
+static const char* TAG = "RS485";
 
 rs485_t* rs485_create(const rs485_config_t* config){
     if (config == NULL)
@@ -74,18 +77,18 @@ error_type_t rs485_init( rs485_t* rs485_obj){
 error_type_t rs485_write( rs485_t* rs485_obj, const char* data, size_t buffer_size){
     if (rs485_obj == NULL)
     {
-        printf(" rs485 is returing null\n");
+        ESP_LOGE(TAG," rs485 is returing null\n");
         return SYSTEM_NULL_PARAMETER;
     }
 
     if(!rs485_obj->activate){
-        printf(" rs485 is returing invalid state\n");
+        ESP_LOGE(TAG," rs485 is returing invalid state\n");
         return SYSTEM_INVALID_STATE;
     }
 
     uart_write_bytes(rs485_obj->uart_num, data, buffer_size);
     uart_wait_tx_done(rs485_obj->uart_num, portMAX_DELAY);
-    printf("sent data sucessfully");
+    ESP_LOGI(TAG,"sent data sucessfully");
 
     return SYSTEM_OK;
  }
@@ -98,10 +101,10 @@ error_type_t rs485_read( rs485_t* rs485_obj, char* data, size_t buffer_size, int
     *read_size = uart_read_bytes(rs485_obj->uart_num, data, buffer_size, -1); 
     if (*read_size != -1)
     {
-         printf("received data sucessfully\n");
+         ESP_LOGI(TAG,"received data sucessfully\n");
     }
 
-    printf("read size: %d\n", *read_size);      
+    ESP_LOGI(TAG,"read size: %d\n", *read_size);      
       return SYSTEM_OK;
  }
 

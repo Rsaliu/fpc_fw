@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "unity.h"
+#include "esp_log.h"
 
 tank_t *tank = NULL;
+static const char* TAG = "TANK";
 void tankSetUp(void) {
     // Set up code before each test
     tank_config_t config = {1, 1000.0, TANK_SHAPE_RECTANGLE, 100.0, 90, 10}; // Example configuration
@@ -95,8 +97,8 @@ TEST_CASE("tank_test", "test_tank_print_into_buffer") {
 
     char buffer[256];
     err = tank_print_info_to_buffer(tank,buffer,256);
-    printf("expected ouput %s\n",expected_buffer_content); 
-    printf("actual ouput %s\n",buffer);
+    ESP_LOGI(TAG,"expected ouput %s\n",expected_buffer_content); 
+    ESP_LOGI(TAG,"actual ouput %s\n",buffer);
     // Assert that the returned string is not NULL (if that's an error condition)
     int result = strcmp(buffer,expected_buffer_content);
     TEST_ASSERT_EQUAL(result,0);

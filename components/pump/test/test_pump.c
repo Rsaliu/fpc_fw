@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "unity.h"
+#include "esp_log.h"
  
 pump_t *pump = NULL;
+static const char* TAG = "PUMP";
 void setUp(void) {
     // Set up code before each test
     pump_config_t config = {1, "Test Pump", 5.0}; // Example configuration
@@ -97,10 +99,10 @@ TEST_CASE("pump_test", "test_pump_print_info_into_buffer"){
     char buffer[256];
     result = pump_print_info_into_buffer(pump, buffer, 256);
     TEST_ASSERT_EQUAL(SYSTEM_OK,result);
-    printf("lenght of expected: %d\n",strlen(expected_buffer_content));
-    printf("lenght of actual: %d\n",strlen(buffer));
-    printf("\nExpected ouput:\n %s\n",expected_buffer_content); 
-    printf("\nActual ouput:\n %s\n",buffer);
+    ESP_LOGI(TAG,"lenght of expected: %d",strlen(expected_buffer_content));
+    ESP_LOGI(TAG,"lenght of actual: %d",strlen(buffer));
+    ESP_LOGI(TAG,"Expected ouput:%s",expected_buffer_content); 
+    ESP_LOGI(TAG,"Actual ouput:%s",buffer);
     int value = strcmp(buffer, expected_buffer_content);
     TEST_ASSERT_EQUAL(value,0);
     tearDown();
