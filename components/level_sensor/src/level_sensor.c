@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "esp_log.h"
 
 struct level_sensor_t
 {
@@ -11,6 +12,7 @@ struct level_sensor_t
 };
 static const int sensor_buffer_size = 50;
 static const int receive_buff_size = 100;
+static const char* TAG = "LEVEL_SENSOR";
 
 level_sensor_t *level_sensor_create(level_sensor_config_t config)
 {
@@ -55,24 +57,24 @@ error_type_t level_sensor_read(level_sensor_t *level_sensor_obj, uint16_t* read_
     int receive_payload = 0; // store the amount of receive data
     error_type_t err;
 
-    printf("Calling protocol()...\n");
+    ESP_LOGI( TAG, "Calling protocol()...");
     err = level_sensor_obj->config->protocol(level_sensor_obj->config->sensor_addr, buffer, sensor_buffer_size, &payload_size);
-    printf("Protocol returned %d, payload_size=%d\n", err, payload_size);
+    ESP_LOGI( TAG, "Protocol returned %d, payload_size=%d", err, payload_size);
     if (err != SYSTEM_OK)
     {
-        printf("failed to run protocol");
+        ESP_LOGE( TAG, "failed to run protocol");
         return SYSTEM_INVALID_PARAMETER;
     }
     if (payload_size == 0)
     {
 
-        printf("payload return invalid lenght \n");
+        ESP_LOGE( TAG,"payload return invalid lenght");
         return SYSTEM_INVALID_LENGTH;
     }
 
     for (int x = 0; x < payload_size; x++)
     {
-        printf("payload[%d]: %x\n", x, buffer[x]);
+        ESP_LOGI( TAG,"payload[%d]: %x\n", x, buffer[x]);
     }
     err = level_sensor_obj->config->send_recive(level_sensor_obj->config->medium_context, buffer, payload_size, receive_buff, &receive_payload);
     if (err != SYSTEM_OK)
@@ -81,18 +83,18 @@ error_type_t level_sensor_read(level_sensor_t *level_sensor_obj, uint16_t* read_
     }
     if (receive_payload == 0)
     {
-        printf("receive payload return invalid lenght\n");
+        ESP_LOGE( TAG,"receive payload return invalid lenght\n");
         return SYSTEM_INVALID_LENGTH;
     }
 
     for (int x = 0; x < receive_payload; x++)
     {
-        printf("received[%d]: %x\n", x, receive_buff[x]);
+        ESP_LOGI( TAG,"received[%d]: %x\n", x, receive_buff[x]);
     }
     err = level_sensor_obj->config->interpreter(receive_buff, receive_payload, read_level);
     if (err != SYSTEM_OK)
     {
-        printf("failed to interepret protocol\n");
+        ESP_LOGE( TAG,"failed to interepret protocol\n");
         return SYSTEM_INVALID_PARAMETER;
     }
 

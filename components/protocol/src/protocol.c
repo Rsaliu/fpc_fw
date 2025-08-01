@@ -3,12 +3,16 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include "esp_log.h"
+
+static const char* TAG = "PROTOCOL";
 
 error_type_t protocol_gl_a01_write_address(uint8_t current_addr, uint8_t new_addr, uint8_t* buffer, uint8_t buff_size){
       if (buff_size < 8)
     {
         return SYSTEM_INVALID_PARAMETER;
     }
+
     buffer[0] = current_addr;
     buffer[1] = 0x06;
     buffer[2] = 0x02;
@@ -67,18 +71,18 @@ error_type_t protocol_gl_a01_read_temp(uint8_t slave_addr, uint8_t* temp_buffer,
 error_type_t protocol_gl_a01_interpreter( uint8_t* buffer, int buffer_Size, uint16_t* sensor_data){
 
     uint16_t calculated_crc = MODBUS_CRC16_v3(buffer,buffer_Size-2);
-    printf("calculated crc: %x\n", calculated_crc);
+    ESP_LOGI(TAG,"calculated crc: %x", calculated_crc);
     //compare the claculated_crc and actual crc
     uint16_t received_crc = buffer[buffer_Size-2]| (buffer[buffer_Size-1] << 8);
-    printf("received crc: %x\n", received_crc);
+    ESP_LOGI(TAG,"received crc: %x", received_crc);
 
     if (received_crc != calculated_crc)
     {
-        printf("CRC does not correspond");           
+        ESP_LOGE(TAG,"CRC does not correspond");           
         return SYSTEM_INVALID_PARAMETER;
     }
     *sensor_data = (buffer[3] << 8) | buffer[4];
-    printf("Tank level: %umm\n", *sensor_data);
+    ESP_LOGI(TAG,"Tank level: %umm", *sensor_data);
     
     return SYSTEM_OK;
 }

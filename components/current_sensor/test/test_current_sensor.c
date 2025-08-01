@@ -2,8 +2,10 @@
 #include <unity.h>
 #include <common_headers.h>
 #include <stdio.h>
+#include "esp_log.h"
 
 current_sensor_t* current_sensor = NULL;
+static const char* TAG = "CURRENT_SENSOR";
 
 error_type_t dummy_read_current(void* context, float* current_value) {
     // Dummy function to simulate reading current
@@ -72,7 +74,7 @@ TEST_CASE("current_sensor_test", "test_current_sensor_get_reading") {
     float current_value = 0.0f;
     result = current_sensor_get_current_in_amp(current_sensor, &current_value);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    printf("Current reading: %f\n", current_value);
+    ESP_LOGI(TAG,"Current reading: %f", current_value);
     TEST_ASSERT_EQUAL_FLOAT(current_value, 10.0f); // Check if the reading matches the dummy value
     currentSensorTearDown();
 }
