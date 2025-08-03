@@ -9,10 +9,11 @@
 #include "esp_wifi.h"
 #include "esp_http_server.h"
 #include "nvs_flash.h"
+#include <credential_store.h>
 
 const char *TAG = "WEBSERVER";
 const int RESERVED_SOCKETS = 3; // Number of reserved sockets for internal use
-
+static const char* ALLOWED_ORIGIN = "*";
 
 typedef enum{
     WEBSERVER_NOT_INITIALIZED = 0, // Web server is not initialized
@@ -28,7 +29,7 @@ struct webserver_t {
     httpd_config_t httpd_config; // HTTP server configuration
     webserver_state_t status; // Current state of the web server
 };
-static esp_err_t options_handler(httpd_req_t *req);
+static esp_err_t cors_preflight_handler(httpd_req_t *req);
 webserver_t* webserver_create(const webserver_config_t* config){
     if (config == NULL) {
         return NULL; // Handle null configuration
@@ -164,13 +165,26 @@ error_type_t webserver_init(webserver_t* server){
         ESP_LOGE(TAG, "Failed to initialize file system: %s", esp_err_to_name(ret));
         return SYSTEM_OPERATION_FAILED; // Handle file system initialization failure
     }
+    ret = credential_store_init();
+    if (ret != ESP_OK) {
+        cleanup_mdns_netbios();
+        ESP_LOGE(TAG, "Failed to initialize file system: %s", esp_err_to_name(ret));
+        return SYSTEM_OPERATION_FAILED; // Handle file system initialization failure
+    }
+    ESP_LOGI(TAG, "secure initialized successfully");
    server->rest_context = calloc(1, sizeof(rest_server_context_t));
     if(server->rest_context == NULL) {
         cleanup_mdns_netbios();
         ESP_LOGE(TAG, "Failed to allocate memory for REST server context");
         return SYSTEM_OPERATION_FAILED; // Handle memory allocation failure
     }
-    strlcpy(server->rest_context->base_path, server->config->base_path, sizeof(server->rest_context->base_path));
+    memset(server->rest_context->base_path,0,sizeof(server->rest_context->base_path));
+    strlcpy(server->rest_context->base_path, server->config->web_mount_point, sizeof(server->rest_context->base_path));
+    memset(server->rest_context->scratch, 0, sizeof(server->rest_context->scratch));
+    strlcpy(server->rest_context->config_file_path, server->config->config_file_path, sizeof(server->rest_context->config_file_path));
+    ESP_LOGI(TAG, "REST server context initialized with base path: %s", server->rest_context->base_path);
+    ESP_LOGI(TAG, "REST server context initialized with config file path: %s", server->rest_context->config_file_path);
+    ESP_LOGI(TAG,"base bath set from webserver is: %s",server->rest_context->base_path);
     server->httpd_config = (httpd_config_t) HTTPD_DEFAULT_CONFIG();
     server->httpd_config.server_port = server->config->port; // Set the server port
     server->httpd_config.max_open_sockets = server->config->max_connections + RESERVED_SOCKETS; // Reserve 3 sockets for internal use
@@ -193,19 +207,21 @@ error_type_t webserver_start(webserver_t* server){
         ESP_LOGE(TAG, "Failed to start HTTP server: %s", esp_err_to_name(ret));
         return SYSTEM_OPERATION_FAILED; // Handle HTTP server start failure
     }
-    // Register the OPTIONS handler for CORS support
-    // static httpd_uri_t options_uri = {
-    //     .uri = "/*", // Match all URIs
-    //     .method = HTTP_OPTIONS,
-    //     .handler = options_handler,
-    //     .user_ctx = NULL
-    // };
-    // ret = httpd_register_uri_handler(server->server, &options_uri);
-    // if (ret != ESP_OK) {
-    //     ESP_LOGE(TAG, "Failed to register OPTIONS handler: %s", esp_err_to_name(ret));
-    //     httpd_stop(server->server); // Stop the server if registration fails
-    //     return SYSTEM_OPERATION_FAILED; // Handle OPTIONS handler registration failure
-    // }
+    //****** Leaving this code here, we may need it soon */
+    //Register the OPTIONS handler for CORS support
+    static httpd_uri_t options_uri = {
+        .uri = "/*", // Match all URIs
+        .method = HTTP_OPTIONS,
+        .handler = cors_preflight_handler,
+        .user_ctx = NULL
+    };
+    ret = httpd_register_uri_handler(server->server, &options_uri);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to register OPTIONS handler: %s", esp_err_to_name(ret));
+        httpd_stop(server->server); // Stop the server if registration fails
+        return SYSTEM_OPERATION_FAILED; // Handle OPTIONS handler registration failure
+    }
+    ESP_LOGI(TAG, "OPTIONS handler registered successfully");
     server->status = WEBSERVER_RUNNING; // Set the status to running
     ESP_LOGI(TAG, "Web server started successfully");
     return SYSTEM_OK;
@@ -264,7 +280,11 @@ error_type_t webserver_deinit(webserver_t* server){
         free(server->rest_context); // Free the REST server context
         server->rest_context = NULL; // Set pointer to NULL after freeing
     }
-
+    if(credential_store_deinit() != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to deinitialize NVS partition");
+        return SYSTEM_OPERATION_FAILED; // Handle NVS deinitialization failure
+    }
+    ESP_LOGI(TAG, "secure deinitialized successfully");
     if(de_init_fs(server->config->web_partition_label) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to deinitialize file system");
         return SYSTEM_OPERATION_FAILED; // Handle file system deinitialization failure
@@ -328,18 +348,29 @@ error_type_t webserver_get_scratch_buffer(webserver_t* server, char** buffer, si
     return SYSTEM_OK;
 }
 
-static void add_cors_headers(httpd_req_t *req)
-{
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin",  "*");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+error_type_t webserver_get_context(webserver_t* server, rest_server_context_t** context_ptr){
+    if (server == NULL || server->rest_context == NULL || context_ptr == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null parameters
+    }
+    if (server->status != WEBSERVER_RUNNING) {
+        return SYSTEM_INVALID_STATE; // Web server is not running
+    }
+
+    *context_ptr = server->rest_context;
+    ESP_LOGI(TAG, "context buffer retrieved successfully");
+    return SYSTEM_OK;  
+}
+
+static esp_err_t cors_preflight_handler(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type, Authorization");
-    httpd_resp_set_hdr(req, "Access-Control-Max-Age",       "3600");
+    // If you want to allow cookies/auth:
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Credentials", "true");
+    // No body for OPTIONS
+    httpd_resp_set_status(req, "204 No Content");
+    return httpd_resp_send(req, NULL, 0);
 }
 
 
-static esp_err_t options_handler(httpd_req_t *req)
-{
-    add_cors_headers(req);
-    return httpd_resp_send(req, NULL, 0); // 204 by default
-}
 

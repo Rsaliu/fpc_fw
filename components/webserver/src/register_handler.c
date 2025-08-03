@@ -3,6 +3,8 @@
 #include <cJSON.h>
 #include <credential_store.h>
 #include "esp_log.h"
+#include <webserver_utils.h>
+#include <esp_http_server.h>
 
 
 const char *REGISTER_HANDLER_TAG = "REGISTER_HANDLER";
@@ -11,6 +13,11 @@ esp_err_t register_handler(httpd_req_t *req){
     esp_err_t err;
     bool result;
     err  = get_user_registered_flag(&result);
+    if (req == NULL) {
+        //httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "null request");
+        return ESP_ERR_NO_MEM; // Handle null request
+    }
+    inject_cors_options(req); // Set CORS headers for the request
     if (err != ESP_OK) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to check user registration status");
         return err; // Handle error checking user registration status
@@ -19,35 +26,17 @@ esp_err_t register_handler(httpd_req_t *req){
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "User already registered");
         return ESP_FAIL; // Handle already registered user
     }
-    if (req == NULL) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "null request");
-        return ESP_ERR_NO_MEM; // Handle null request
-    }
+
     ESP_LOGI(REGISTER_HANDLER_TAG, "Handling registration request for URI: %s", req->uri);
-    int total_len = req->content_len;
-    if (total_len <= 0 || total_len >= SCRATCH_BUFSIZE) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid content length");
-        return ESP_FAIL; // Handle invalid content length
+        //****** Leaving this code here, we may need it soon */
+    rest_server_context_t * context = (rest_server_context_t *)req->user_ctx;
+    char *buf = (char *)(context->scratch);
+    err = retrieve_http_request_body(req, buf, SCRATCH_BUFSIZE);
+    if (err != ESP_OK) {
+        ESP_LOGE(REGISTER_HANDLER_TAG, "Failed to retrieve HTTP request body: %s", esp_err_to_name(err));
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to retrieve request body");
+        return err; // Handle request body retrieval failure
     }
-    ESP_LOGI(REGISTER_HANDLER_TAG, "Total length of request body: %d", total_len);
-    int cur_len = 0;
-    char *buf = (char *)(req->user_ctx);
-    int received = 0;
-    if (total_len >= SCRATCH_BUFSIZE) {
-        /* Respond with 500 Internal Server Error */
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
-        return ESP_FAIL;
-    }
-    while (cur_len < total_len) {
-        received = httpd_req_recv(req, buf + cur_len, total_len);
-        if (received <= 0) {
-            /* Respond with 500 Internal Server Error */
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
-            return ESP_FAIL;
-        }
-        cur_len += received;
-    }
-    buf[total_len] = '\0';
     ESP_LOGI(REGISTER_HANDLER_TAG, "Received registration data: %s", buf);
     cJSON *root = cJSON_Parse(buf);
     if (root == NULL) {
