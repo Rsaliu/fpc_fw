@@ -7,6 +7,7 @@ idf_component_register(SRCS "src/webserver.c"
                             "src/credential_store.c"
                             "src/session.c"
                             "src/logout_handler.c"
+                            "src/auth.c"
                        INCLUDE_DIRS "."
                        REQUIRES common esp_http_server fatfs json spiffs nvs_flash mdns esp_wifi json mbedtls esp_timer
                        PRIV_REQUIRES esp_event
