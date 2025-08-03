@@ -4,33 +4,24 @@
 #include <session.h>
 #include <credential_store.h>
 #include <esp_log.h>
+#include <webserver_utils.h>
 
 const char *LOGIN_HANDLER_TAG = "LOGIN_HANDLER";
 
 esp_err_t login_handler(httpd_req_t *req){
     if (req == NULL) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "null request");
+        //httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "null request");
         return ESP_ERR_NO_MEM; // Handle null request
     }
-    int total_len = req->content_len;
-    int cur_len = 0;
-    char *buf = (char *)(req->user_ctx);
-    int received = 0;
-    if (total_len >= SCRATCH_BUFSIZE) {
-        /* Respond with 500 Internal Server Error */
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
-        return ESP_FAIL;
+    inject_cors_options(req); // Set CORS headers for the request
+    rest_server_context_t * context = (rest_server_context_t *)req->user_ctx;
+    char *buf = (char *)(context->scratch);
+    esp_err_t err = retrieve_http_request_body(req, buf, SCRATCH_BUFSIZE);
+    if (err != ESP_OK) {
+        ESP_LOGE(LOGIN_HANDLER_TAG, "Failed to retrieve HTTP request body: %s", esp_err_to_name(err));
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to retrieve request body");
+        return err; // Handle request body retrieval failure
     }
-    while (cur_len < total_len) {
-        received = httpd_req_recv(req, buf + cur_len, total_len);
-        if (received <= 0) {
-            /* Respond with 500 Internal Server Error */
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
-            return ESP_FAIL;
-        }
-        cur_len += received;
-    }
-    buf[total_len] = '\0';
 
     cJSON *root = cJSON_Parse(buf);
     const char* username = cJSON_GetObjectItem(root, "username")->valuestring;
@@ -59,7 +50,16 @@ esp_err_t login_handler(httpd_req_t *req){
         cJSON_Delete(root);
         return ESP_FAIL; // Handle invalid credentials
     }
-    cJSON_Delete(root);
+    // check if the user is already logged in
+    session_t *existing_session = find_session_by_username(username);
+    if (existing_session != NULL) {
+        // User is already logged in, return an error
+        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_sendstr(req, "User already logged in");
+        ESP_LOGI(LOGIN_HANDLER_TAG, "User already logged in");
+        cJSON_Delete(root);
+        return ESP_OK; // Handle already logged in user
+    }
     //set the session context to the username for further requests
 
     session_t *s = create_session(username);
@@ -72,10 +72,11 @@ esp_err_t login_handler(httpd_req_t *req){
     // If authentication is successful, send a success response
     httpd_resp_set_status(req, HTTPD_200);
     ESP_LOGI(LOGIN_HANDLER_TAG, "User %s logged in successfully", username);
-    esp_err_t err = httpd_resp_sendstr(req, "Login successful");
+    err = httpd_resp_sendstr(req, "Login successful");
     if(err != ESP_OK) {
         ESP_LOGE(LOGIN_HANDLER_TAG, "Failed to send response: %s", esp_err_to_name(err));
         return ESP_FAIL; // Handle response sending failure
     }
+    cJSON_Delete(root);
     return ESP_OK; // Return success   
 }

@@ -46,9 +46,9 @@ esp_err_t auth_store_set(const char *username, const char *password)
 
     // Store in NVS
     nvs_handle_t h;
-    esp_err_t err = nvs_open(AUTH_NS, NVS_READWRITE, &h);
+    esp_err_t err = nvs_open_from_partition(AUTH_NS, AUTH_KEY, NVS_READWRITE, &h);
     if (err != ESP_OK) {
-        ESP_LOGE(CREDENTIAL_STORE_TAG, "Failed to open NVS namespace %s: %s", AUTH_NS, esp_err_to_name(err));
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "%s Failed to open NVS namespace %s: %s",__func__, AUTH_NS, esp_err_to_name(err));
         return err;
     }
     err = nvs_set_blob(h, AUTH_KEY, &rec, sizeof(rec));
@@ -65,7 +65,7 @@ bool auth_store_check(const char *username, const char *password)
     size_t len = sizeof(rec);
 
     nvs_handle_t h;
-    if (nvs_open(AUTH_NS, NVS_READONLY, &h) != ESP_OK) return false;
+    if (nvs_open_from_partition(AUTH_NS, AUTH_KEY, NVS_READWRITE, &h) != ESP_OK) return false;
     esp_err_t err = nvs_get_blob(h, AUTH_KEY, &rec, &len);
     nvs_close(h);
     if (err != ESP_OK || len != sizeof(rec)) return false;
@@ -89,9 +89,9 @@ esp_err_t get_user_registered_flag(bool* is_registered){
     size_t len = sizeof(flag);
     esp_err_t err;
     if (is_registered == NULL) return ESP_ERR_INVALID_ARG; // Handle null pointer
-    err = nvs_open(AUTH_NS, NVS_READONLY, &h);
+    err = nvs_open_from_partition(AUTH_NS, AUTH_KEY, NVS_READWRITE, &h);
     if( err!= ESP_OK){
-        ESP_LOGE(CREDENTIAL_STORE_TAG, "Failed to open NVS namespace %s: %s", AUTH_NS, esp_err_to_name(err));
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "%s Failed to open NVS namespace %s: %s",__func__, AUTH_NS, esp_err_to_name(err));
         return err;
     } 
     err = nvs_get_blob(h, REGISTERED_USER_FLAG, &flag, &len);
@@ -114,12 +114,46 @@ esp_err_t get_user_registered_flag(bool* is_registered){
 esp_err_t set_user_registered_flag(void){
     nvs_handle_t h;
     uint8_t flag = REGISTERED_FLAG;
-    esp_err_t err = nvs_open(AUTH_NS, NVS_READWRITE, &h);
+    esp_err_t err = nvs_open_from_partition(AUTH_NS, AUTH_KEY, NVS_READWRITE, &h);
+    if (err != ESP_OK) {
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "%s Failed to open NVS namespace %s: %s",__func__, AUTH_NS, esp_err_to_name(err));
+        return err;
+    }
+    err = nvs_set_blob(h, REGISTERED_USER_FLAG, &flag, sizeof(flag));
+    if (err == ESP_OK) err = nvs_commit(h);
+    nvs_close(h);
+    return err;
+}
+
+esp_err_t credential_store_init(void){
+
+    esp_err_t err = nvs_flash_init_partition(AUTH_NS);
+    if (err != ESP_OK) {
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "Failed to initialize NVS partition %s: %s", AUTH_NS, esp_err_to_name(err));
+        return err; // Return the error code
+    }
+    ESP_LOGI(CREDENTIAL_STORE_TAG, "Credential store initialized successfully");
+    return ESP_OK; // Return success
+}
+
+esp_err_t credential_store_deinit(void){
+    esp_err_t err = nvs_flash_deinit_partition(AUTH_NS);
+    if (err != ESP_OK) {
+        ESP_LOGE(CREDENTIAL_STORE_TAG, "Failed to deinitialize NVS partition %s: %s", AUTH_NS, esp_err_to_name(err));
+        return err; // Return the error code
+    }
+    ESP_LOGI(CREDENTIAL_STORE_TAG, "Credential store deinitialized successfully");
+    return ESP_OK; // Return success
+}
+
+esp_err_t clear_credential_store(void) {
+    nvs_handle_t h;
+    esp_err_t err = nvs_open_from_partition(AUTH_NS, AUTH_KEY, NVS_READWRITE, &h);
     if (err != ESP_OK) {
         ESP_LOGE(CREDENTIAL_STORE_TAG, "Failed to open NVS namespace %s: %s", AUTH_NS, esp_err_to_name(err));
         return err;
     }
-    err = nvs_set_blob(h, REGISTERED_USER_FLAG, &flag, sizeof(flag));
+    err = nvs_erase_all(h);
     if (err == ESP_OK) err = nvs_commit(h);
     nvs_close(h);
     return err;

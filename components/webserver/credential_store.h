@@ -37,4 +37,7 @@ esp_err_t auth_store_set(const char *username, const char *password);
 bool auth_store_check(const char *username, const char *password);
 esp_err_t get_user_registered_flag(bool* is_registered);
 esp_err_t set_user_registered_flag(void);
+esp_err_t credential_store_init();
+esp_err_t credential_store_deinit(void);
+esp_err_t clear_credential_store(void);
 #endif // ___CREDENTIAL_STORE_H___

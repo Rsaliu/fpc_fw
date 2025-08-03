@@ -17,4 +17,7 @@ typedef struct {
 session_t* create_session(const char *user);
 void set_session_cookie(httpd_req_t *req, const session_t *s);
 session_t* find_session_by_token(const char *tok);
+void remove_session(session_t *s);
+session_t* find_session_by_username(const char *username);
+void clear_sessions(void);
 #endif // __SESSION_H__
