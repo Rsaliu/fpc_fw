@@ -18,7 +18,7 @@ static void print_banner(const char* text);
 
 void app_main(void)
 {
-
+    esp_log_level_set("*", ESP_LOG_INFO);
     print_banner("Running all the registered tests");
     UNITY_BEGIN();
     unity_run_test_by_name("adc_reader_test");
