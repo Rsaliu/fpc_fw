@@ -37,6 +37,7 @@ void app_main(void)
     unity_run_test_by_name("webserver_test");
     unity_run_test_by_name("wifi_hotspot_test");
     unity_run_test_by_name("config_manager_test");
+    unity_run_test_by_name("pump_monitor_test");
     UNITY_END();
 }
 
