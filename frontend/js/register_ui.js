@@ -1,23 +1,20 @@
+
+
 function register(event) {
-  event.preventDefault(); // Prevent form submission (if inside a form)
-
+  event.preventDefault();
   const form = document.getElementById("registerForm");
-
-  // Collect form values
   const formData = {
     username: form.username.value.trim(),
     password1: form.pwd1.value,
     password2: form.pwd2.value
   };
 
-  // Optional: Check if passwords match
-  if (formData.pwd1 !== formData.pwd2) {
+  if (formData.password1 !== formData.password2) {
     alert("Passwords do not match.");
     console.log("Passwords do not match.");
     return;
   }
-  console.log("will send data no,password match");
-  // Send the data as JSON (e.g., to an API endpoint)
+  console.log("will send data, passwords match");
   fetch("https://fpc-webserver.local/register", {
     method: "POST",
     headers: {
@@ -33,7 +30,7 @@ function register(event) {
   })
   .then(data => {
     alert("Registration successful!");
-    console.log("Server response:", data);
+    window.location.href = "home_ui.html";
   })
   .catch(error => {
     console.error("Error:", error);
