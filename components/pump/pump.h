@@ -6,7 +6,8 @@
 typedef struct{
     int id;
     char * make;
-    float power_in_hp; 
+    float power_in_hp;
+    float current_rating;
 } pump_config_t;
 
 
