@@ -12,6 +12,11 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include <register_handler.h>
+#include <login_handler.h>
+#include <config_handler.h>
+#include <logout_handler.h>
+#include <reset_handler.h>
 
 const char * WEBSERVER_TEST_TAG = "WEBSERVER_TEST";
 
@@ -20,11 +25,12 @@ webserver_t* webserver = NULL;
 webserver_config_t webserver_config = {
     .port = 80, // Port number for the web server
     .max_connections = 4, // Maximum number of concurrent connections
-    .mdns_instance = "ESP32-WebServer", // MDNS instance name
-    .mdns_hostname = "esp32-webserver", // MDNS hostname
+    .mdns_instance = "FPC-WebServer", // MDNS instance name
+    .mdns_hostname = "fpc-webserver", // MDNS hostname
     .base_path = "/spiffs", // Base path for the web server
     .web_mount_point = "/web", // Web mount point for serving files
-    .web_partition_label = "spiffs" // Partition label for the web server
+    .web_partition_label = "spiffs", // Partition label for the web server
+    .config_file_path = "config.json" // Path to the configuration file
 };
 
 void webserverSetUp(void) {
@@ -217,6 +223,70 @@ TEST_CASE("webserver_test", "test_webserver_add_dummy_route") {
     };
 
     result = webserver_add_route(webserver, &uri);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    rest_server_context_t * context_ptr;
+    result = webserver_get_context(webserver,&context_ptr);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    TEST_ASSERT_NOT_NULL(context_ptr);
+    printf("base path from test is: %s\n",context_ptr->base_path);
+    httpd_uri_t uri2 = {
+        .uri = "/register",
+        .method = HTTP_POST,
+        .handler = register_handler,
+        .user_ctx = (void*)context_ptr,
+    };
+
+    result = webserver_add_route(webserver, &uri2);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+
+    httpd_uri_t uri3 = {
+        .uri = "/login",
+        .method = HTTP_POST,
+        .handler = login_handler,
+        .user_ctx = (void*)context_ptr,
+    };
+
+    result = webserver_add_route(webserver, &uri3);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+
+    httpd_uri_t uri4 = {
+        .uri = "/config",
+        .method = HTTP_POST,
+        .handler = set_config_handler,
+        .user_ctx = (void*)context_ptr,
+    };
+
+    result = webserver_add_route(webserver, &uri4);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+
+    httpd_uri_t uri5 = {
+        .uri = "/config",
+        .method = HTTP_GET,
+        .handler = get_config_handler,
+        .user_ctx = (void*)context_ptr,
+    };
+
+    result = webserver_add_route(webserver, &uri5);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+
+    httpd_uri_t uri6 = {
+        .uri = "/logout",
+        .method = HTTP_POST,
+        .handler = logout_handler,
+        .user_ctx = (void*)context_ptr,
+    };
+
+    result = webserver_add_route(webserver, &uri6);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+
+    httpd_uri_t uri7 = {
+        .uri = "/reset",
+        .method = HTTP_POST,
+        .handler = reset_handler,
+        .user_ctx = (void*)context_ptr,
+    };
+
+    result = webserver_add_route(webserver, &uri7);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
 
     webserverTearDown();
