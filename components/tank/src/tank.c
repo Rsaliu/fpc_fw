@@ -107,6 +107,21 @@ const char* shape_to_string(tank_shape_t shape) {
     }
 }
 
+//convert string to tank_shape
+tank_shape_t string_to_tank_shape(const char* str_shape){
+    if (strcmp(str_shape, "Cylinder") == 0)
+    {
+        return TANK_SHAPE_CYLINDER;
+    } else if (strcmp(str_shape, "Rectangle") == 0)
+    {
+        return TANK_SHAPE_RECTANGLE;
+    }else
+    {
+          ESP_LOGW(TAG, "Unknown shape");
+          return TANK_SHAPE_RECTANGLE;
+    }
+}
+
 // Print all tank details
 error_type_t tank_print_info(tank_t *tank) {
 ESP_LOGI(TAG,"ID: %d\n", tank->config->id);
