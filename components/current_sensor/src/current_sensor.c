@@ -82,3 +82,40 @@ error_type_t current_sensor_get_current_in_amp(const current_sensor_t *sensor, f
     
     return SYSTEM_OK;
 }
+
+const char* current_sensor_interface_to_string(current_sensor_interface_t interface){
+    switch (interface)
+    {
+    case CURRENT_SENSOR_INTERFACE_I2C: return "I2C";
+    case CURRENT_SENSOR_INTERFACE_SPI: return "SPI";
+    case CURRENT_SENSOR_INTERFACE_PWM: return "PWM";
+    case CURRENT_SENSOR_INTERFACE_ANALOG_VOLTAGE: return "ANALOG_VOLTAGE";
+    default: return "Unknown";
+    }
+}
+
+current_sensor_interface_t string_to_current_sensor_interface(const char* str_current_sensor_interface){
+    if (strcmp(str_current_sensor_interface, "I2C") == 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_I2C;
+    }else if (strcmp(str_current_sensor_interface, "SPI") == 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_SPI;
+    }else if (strcmp(str_current_sensor_interface, "PWM") == 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_PWM;
+    }else if (strcmp(str_current_sensor_interface, "ANALOG_VOLTAGE")== 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_ANALOG_VOLTAGE;
+    }else
+    {
+        ESP_LOGW(TAG, "Uknown");
+        return CURRENT_SENSOR_INTERFACE_I2C;
+    }
+    
+    
+    
+    
+    
+    
+}
