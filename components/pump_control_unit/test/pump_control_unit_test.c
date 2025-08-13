@@ -5,9 +5,23 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "esp_log.h"
+#include <level_sensor.h>
+#include <rs485.h>
+#include <rs485_context.h>
+#include <protocol.h>
+#include <string.h>
 
 pump_control_unit_t *pump_control_unit = NULL;
 static const char* TAG = "PUMP_CONTROL_UNIT";
+
+static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff,int send_buff_size,
+    uint8_t *receive_buff,int *receive_buff_size)
+{
+    uint8_t valid_resp[] = { 0x01, 0x03, 0x02, 0x02, 0xF2, 0x38, 0xA1};
+    memcpy(receive_buff, valid_resp, sizeof(valid_resp));
+    *receive_buff_size = sizeof(valid_resp);
+    return SYSTEM_OK;
+}
 
 void pumpControlUnitSetUp(void) {
     // Set up code before each test
@@ -212,7 +226,20 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
         .full_level_in_mm = 90,
         .low_level_in_mm = 10
     };
-    level_sensor_t *level_sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
+      rs485_config_t rs485_config = {2,17,16,4,9600};
+      rs485_t* rs485_obj = rs485_create(&rs485_config);
+    error_type_t err = rs485_init(rs485_obj);
+    if (err != SYSTEM_OK) {
+        ESP_LOGE(TAG,"RS485 init failed");
+    }
+    protocol_callback_t protocol = protocol_gl_a01_read_level;
+    send_receive_t send_receive =  dummy_context_Send_receive;
+    protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
+    level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
+                                       .send_recive = send_receive,
+                                       .interpreter = interpret };
+    level_sensor_t *level_sensor = level_sensor_create(config);
+    //level_sensor_t *level_sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
     TEST_ASSERT_NOT_NULL(level_sensor);
 
     tank_t* my_tank = tank_create(tank_config);
@@ -231,7 +258,7 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
         .make = "TestPump"
     };
     // initialize a tank monitor
-    error_type_t err = tank_monitor_init(tank_monitor);
+    err = tank_monitor_init(tank_monitor);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     printf("Tank monitor pointer value: %p\n", tank_monitor);
     pump_t *pump = pump_create(pump_config);

@@ -17,8 +17,8 @@ typedef struct{
 
 static const char*TAG = "PUMP_CONTROL_UNIT";
 
-//dummy pump_monitor_get_config function
-error_type_t pump_monitor_get_config(pump_monitor_t *monitor, pump_monitor_config_t *config) {
+//dummy pump_monitor_get_config_setup function
+error_type_t pump_monitor_get_config_setup(pump_monitor_t *monitor, pump_monitor_config_t *config) {
     if (monitor == NULL || config == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or configuration pointer
     }
@@ -176,7 +176,7 @@ error_type_t pump_control_unit_add_pump_monitor(pump_control_unit_t *manager, pu
     }
     // Add the pump monitor to the map
     pump_monitor_config_t config;
-    error_type_t err = pump_monitor_get_config(pump_monitor, &config);
+    error_type_t err = pump_monitor_get_config_setup(pump_monitor, &config);
     if (err != SYSTEM_OK) {
         return err; // Handle error in getting pump monitor configuration
     }
