@@ -123,3 +123,59 @@ error_type_t level_sensor_destroy(level_sensor_t **level_sensor_obj)
 
     return SYSTEM_OK;
 }
+
+// convert level sensor interface to string
+const char* level_sensor_interface_to_string(level_sensor_interface_t interface){
+    switch (interface)
+    {
+    case LEVEL_SENSOR_INTERFACE_RS485: return "RS485";
+    case LEVEL_SENSOR_INTERFACE_PWM: return "PWM";
+    case LEVEL_SENSOR_INTERFACE_UART: return "UART";
+    case LEVEL_SENSOR_INTERFACE_I2C: return "I2C";
+    default: return "Unknown";
+    }
+
+}
+
+// convert string to enum
+level_sensor_interface_t string_to_level_sensor_interface(const char* str_level_sensor_interface){
+    if (strcmp(str_level_sensor_interface, "RS485") == 0)
+    {
+        return LEVEL_SENSOR_INTERFACE_RS485;
+    }else if (strcmp(str_level_sensor_interface, "PWM") == 0)
+    {
+        return LEVEL_SENSOR_INTERFACE_PWM;
+    }else if (strcmp(str_level_sensor_interface, "UART") == 0)
+    {
+        return LEVEL_SENSOR_INTERFACE_UART;
+    }else if (strcmp(str_level_sensor_interface, "I2C") == 0)
+    {
+        return LEVEL_SENSOR_INTERFACE_I2C;
+    }else
+    {
+        ESP_LOGW(TAG, "Unknown level sensor interface");
+        return LEVEL_SENSOR_INTERFACE_RS485;
+    }
+        
+}
+
+const char* level_sensor_protocol_to_string(level_sensor_protocol_t protocol){
+    switch (protocol)
+    {
+    case GL_A01_PROTOCOL: return "GL_A01_PROTOCOL";
+    default: return "Unknown";
+    }
+}
+
+level_sensor_protocol_t string_to_level_sensor_protocol(const char* str_to_level_sensor_protocol){
+    if (strcmp(str_to_level_sensor_protocol, "GL_A01_PROTOCOL") == 0)
+    {
+        return GL_A01_PROTOCOL;
+    }else{
+        
+        ESP_LOGW(TAG, "Unknown");
+        return GL_A01_PROTOCOL;
+    }
+    
+
+}
