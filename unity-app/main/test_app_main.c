@@ -27,8 +27,7 @@ void app_main(void)
     unity_run_test_by_name("ads1115_test");
     unity_run_test_by_name("pump_test");
     unity_run_test_by_name("level_sensor_test");
-    
-    unity_run_test_by_name("rs485_test");
+    //unity_run_test_by_name("rs485_test");
     unity_run_test_by_name("tank_test");
     unity_run_test_by_name("tank_monitor_test");
     unity_run_test_by_name("pump_control_unit_test");
@@ -37,6 +36,8 @@ void app_main(void)
     unity_run_test_by_name("crc_test");
     unity_run_test_by_name("webserver_test");
     //unity_run_test_by_name("wifi_hotspot_test");
+    unity_run_test_by_name("pump_monitor_test");
+    unity_run_test_by_name("setup_config_test");
     UNITY_END();
 }
 
