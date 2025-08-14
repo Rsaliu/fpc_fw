@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "esp_log.h"
 
 
 struct pump_t {
@@ -9,6 +10,7 @@ struct pump_t {
     pump_state_t state; // 0 for off, 1 for on
 };
 
+static const char* TAG = "PUMP";
 
 pump_t* pump_create(pump_config_t config){
 
@@ -44,7 +46,7 @@ error_type_t pump_init(pump_t *pump){
     }
     
     pump->state = PUMP_INITIALIZED;
-    printf("Pump initialized with ID: %d, Make: %s, Power: %.2f HP\n",
+    ESP_LOGI(TAG,"Pump initialized with ID: %d, Make: %s, Power: %.2f HP",
            pump->config->id, pump->config->make, pump->config->power_in_hp);
     
     return SYSTEM_OK;
@@ -60,7 +62,7 @@ error_type_t pump_deinit(pump_t *pump){
     }
 
     pump->state = PUMP_NOT_INITIALIZED;
-    printf("Pump deinitialized\n");
+    ESP_LOGI(TAG,"Pump deinitialized");
     
     return SYSTEM_OK;
 }
@@ -73,7 +75,7 @@ error_type_t pump_destroy(pump_t **pump){
     // Free the allocated memory for the pump
     free(*pump);
     *pump = NULL; // Set the pointer to NULL after freeing
-    printf("Pump destroyed\n");
+    ESP_LOGI(TAG,"Pump destroyed");
     
     return SYSTEM_OK;
 }
@@ -84,7 +86,7 @@ error_type_t pump_get_state(const pump_t *pump, pump_state_t *state){
     }
     
     *state = pump->state; // Get the current state of the pump
-    printf("Pump state retrieved: %d\n", *state);
+    ESP_LOGI(TAG,"Pump state retrieved: %d", *state);
     
     return SYSTEM_OK;
 }
@@ -102,10 +104,10 @@ error_type_t pump_get_config(const pump_t *pump, pump_config_t *config){
 }
 
 error_type_t pump_print_info(pump_t* pump){
-    printf("ID: %d\n", pump->config->id);
-    printf("Make: %s\n", pump->config->make);
-    printf("HP-Power: %f\n", pump->config->power_in_hp);
-    printf("State: %d\n", pump->state);
+    ESP_LOGI(TAG,"ID: %d", pump->config->id);
+    ESP_LOGI(TAG,"Make: %s", pump->config->make);
+    ESP_LOGI(TAG,"HP-Power: %f", pump->config->power_in_hp);
+    ESP_LOGI(TAG,"State: %d", pump->state);
     return SYSTEM_OK;
 }
 
