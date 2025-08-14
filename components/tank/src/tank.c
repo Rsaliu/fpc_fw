@@ -105,6 +105,24 @@ const char* shape_to_string(tank_shape_t shape) {
     }
 }
 
+//convert string to shape
+tank_shape_t string_to_tank_shape(const char* shape_str){
+    if (strcmp(shape_str, "Cylinder")== 0)
+    {
+        return TANK_SHAPE_CYLINDER;
+    }else if (strcmp(shape_str, "Rectangle") == 0)
+    {
+        return TANK_SHAPE_RECTANGLE;
+    }else
+    {
+        printf("Unknown");
+        return TANK_SHAPE_RECTANGLE;
+    }
+    
+    
+    
+}
+
 // Print all tank details
 error_type_t tank_print_info(tank_t *tank) {
 printf("ID: %d\n", tank->config->id);
