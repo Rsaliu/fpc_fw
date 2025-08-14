@@ -38,6 +38,7 @@ void app_main(void)
     unity_run_test_by_name("wifi_hotspot_test");
     unity_run_test_by_name("config_manager_test");
     unity_run_test_by_name("pump_monitor_test");
+    unity_run_test_by_name("setup_config_test");
     UNITY_END();
 }
 
