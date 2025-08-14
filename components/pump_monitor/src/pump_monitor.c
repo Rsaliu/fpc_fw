@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "esp_log.h"
+#include "pump_monitor.h"
 
 static const char *TAG = "pump_monitor";
 
@@ -23,19 +24,7 @@ struct pump_monitor_t
     int subscriber_count;                                                    // Count of subscribers
 };
 
-error_type_t current_sensor_get_current(current_sensor_t *sensor, float *current)
-{
-    if (sensor == NULL || current == NULL)
-    {
-        return SYSTEM_NULL_PARAMETER;
-    }
 
-    *current = 6.23; // Simulated value
-
-    ESP_LOGI(TAG, "Current sensor ID: %d, Current value: %.2f amp", sensor->id, (double)(*current));
-
-    return SYSTEM_OK;
-}
 
 pump_monitor_t *pump_monitor_create(pump_monitor_config_t config)
 {
@@ -238,6 +227,7 @@ error_type_t pump_monitor_check_current(pump_monitor_t *pump_monitor)
     }
     return SYSTEM_OK;
 }
+
 
 error_type_t pump_monitor_subscribe_event(pump_monitor_t *pump_monitor, const pump_monitor_event_hook_t *hook, int *event_id)
 {
