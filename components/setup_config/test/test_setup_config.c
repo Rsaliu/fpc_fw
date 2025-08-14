@@ -13,24 +13,8 @@ void setup_config_Setup(void) {
     // Set up code before each test
 }
 
-void setup_config_down(void) {
+void setup_config_teardown(void) {
     // Clean up code after each test
-}
- // dummy mounted spiff
-static void mount_spiffs(void) {
-    ESP_LOGI(TAG, "Mounting SPIFFS...");
-    esp_vfs_spiffs_conf_t conf = {
-        .base_path = "/spiffs",
-        .partition_label = NULL,
-        .max_files = 5,
-        .format_if_mount_failed = true
-    };
-    TEST_ASSERT_EQUAL(ESP_OK, esp_vfs_spiffs_register(&conf));
-}
-// dummy unmounted spiffs
-static void unmount_spiffs(void) {
-    ESP_LOGI(TAG, "Unmounting SPIFFS...");
-    esp_vfs_spiffs_unregister(NULL);
 }
 
 const char* dummy_json_file() {
@@ -98,7 +82,7 @@ TEST_CASE("setup_config_test","test_tank_setup_config"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "tank_setup_config is sucessful\n");
     
-    setup_config_down();
+    setup_config_teardown();
 }
 
 TEST_CASE("setup_config_test", "test_pump_setup_config"){
@@ -110,7 +94,7 @@ TEST_CASE("setup_config_test", "test_pump_setup_config"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "pump_setup_config is sucessful\n");
 
-     setup_config_down();
+     setup_config_teardown();
 
 }
 
@@ -123,7 +107,7 @@ TEST_CASE("setup_config_test", "test_tank_monitor_setup_config"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "ptank_monitor_setup_config is sucessful\n");
 
-     setup_config_down();
+     setup_config_teardown();
 
 }
 
@@ -136,7 +120,7 @@ TEST_CASE("setup_config_test", "test_pump_monitor_setup_config"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "pump_ monitor_setup_config is sucessful\n");
 
-     setup_config_down();
+     setup_config_teardown();
 
 }
 
@@ -149,7 +133,7 @@ TEST_CASE("setup_config_test", "test_relay_driver_setup_config"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "relay_setup_config is sucessful\n");
 
-     setup_config_down();
+     setup_config_teardown();
 
 }
 
@@ -162,7 +146,7 @@ TEST_CASE("setup_config_test", "test_level_sensor_setup_config"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "level_sensor_setup_config is sucessful\n");
 
-     setup_config_down();
+     setup_config_teardown();
 
 }
 
@@ -175,29 +159,6 @@ TEST_CASE("setup_config_test", "test_current_sensor_setup_config"){
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "current_sensor_setup_config is sucessful\n");
 
-     setup_config_down();
-
-}
-
-TEST_CASE("setup_config_test", "test_spi_setup_config"){
-    setup_config_Setup();
-    mount_spiffs();
-    // dummy json file
-    const char* json_content = dummy_json_file();
-
-    // dummy file path
-    const char* dummy_file_path =  "/spiffs/dummy_config.json";  
-    FILE *fp = fopen(dummy_file_path, "w");
-    TEST_ASSERT_NOT_NULL(fp); 
-    fprintf(fp, "%s", json_content);
-    fclose(fp);
-    error_type_t err = spi_setup_config(dummy_file_path);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-    ESP_LOGI(TAG, "Dummy JSON file opened and read correctly");
-    
-    // Cleanup the dummy file part
-    remove(dummy_file_path);
-    unmount_spiffs();
-     setup_config_down();
+     setup_config_teardown();
 
 }

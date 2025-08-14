@@ -12,8 +12,8 @@
 
 static const char *TAG = "SPI_SETUP_CONFIG";
 
- static cJSON* get_first_pump_control_unit_array(cJSON* root) {
-    cJSON* pump_control_units = cJSON_GetObjectItem(root, "pump_control_units");
+ static cJSON* get_first_pump_control_unit_array(cJSON* pump_control_unit_json) {
+    cJSON* pump_control_units = cJSON_GetObjectItem(pump_control_unit_json, "pump_control_units");
     if (!pump_control_units || !cJSON_IsArray(pump_control_units)) {
         ESP_LOGE(TAG, "pump_control_units is missing or not an array");
         return NULL;
@@ -71,9 +71,9 @@ error_type_t tank_Setup_config(cJSON *tank_json){
     return SYSTEM_OK;
 }
 
-error_type_t pump_setup_config(cJSON *json_root)
+error_type_t pump_setup_config(cJSON * pump_json)
 {
-    cJSON* get_pump_arr   = get_first_pump_control_unit_array(json_root);
+    cJSON* get_pump_arr   = get_first_pump_control_unit_array(json_json);
     if (!get_pump_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -107,9 +107,9 @@ error_type_t pump_setup_config(cJSON *json_root)
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_setup_config(cJSON *tank_monitor_root)
+error_type_t tank_monitor_setup_config(cJSON *tank_monitor_json)
 {
-    cJSON* get_tank_monitor_arr  = get_first_pump_control_unit_array(tank_monitor_root);
+    cJSON* get_tank_monitor_arr  = get_first_pump_control_unit_array(tank_monitor_json);
     if (!get_tank_monitor_arr )
     {
         return SYSTEM_NULL_PARAMETER;
@@ -152,9 +152,9 @@ error_type_t tank_monitor_setup_config(cJSON *tank_monitor_root)
     return SYSTEM_OK;
 }
 
-error_type_t pump_monitor_setup_config(cJSON *pump_monitor_root)
+error_type_t pump_monitor_setup_config(cJSON *pump_monitor_json)
 {
-    cJSON* get_pump_monitor_arr   = get_first_pump_control_unit_array(pump_monitor_root);
+    cJSON* get_pump_monitor_arr   = get_first_pump_control_unit_array(pump_monitor_json);
     if (!get_pump_monitor_arr )
     {
         return SYSTEM_NULL_PARAMETER;
@@ -197,9 +197,9 @@ error_type_t pump_monitor_setup_config(cJSON *pump_monitor_root)
     return SYSTEM_OK;
 }
 
-error_type_t relay_driver_setup_config(cJSON *relay_root)
+error_type_t relay_driver_setup_config(cJSON *relay_json)
 {
-    cJSON* get_relay_arr  = get_first_pump_control_unit_array(relay_root);
+    cJSON* get_relay_arr  = get_first_pump_control_unit_array(relay_json);
     if (!get_relay_arr )
     {
         return SYSTEM_NULL_PARAMETER;
@@ -231,9 +231,9 @@ error_type_t relay_driver_setup_config(cJSON *relay_root)
     return SYSTEM_OK;
 }
 
-error_type_t level_sensor_setup_config(cJSON *level_sensor_root)
+error_type_t level_sensor_setup_config(cJSON *level_sensor_json)
 {
-    cJSON* get_level_sensor_arr  = get_first_pump_control_unit_array(level_sensor_root);
+    cJSON* get_level_sensor_arr  = get_first_pump_control_unit_array(level_sensor_json);
     if (!get_level_sensor_arr )
     {
         return SYSTEM_NULL_PARAMETER;
@@ -271,9 +271,9 @@ error_type_t level_sensor_setup_config(cJSON *level_sensor_root)
     return SYSTEM_OK;
 }
 
-error_type_t current_sensor_setup_confi(cJSON *current_sensor_root)
+error_type_t current_sensor_setup_confi(cJSON *current_sensor_json)
 {
-    cJSON* get_current_sensor_arr  = get_first_pump_control_unit_array(current_sensor_root);
+    cJSON* get_current_sensor_arr  = get_first_pump_control_unit_array(current_sensor_json);
     if (!get_current_sensor_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -309,54 +309,3 @@ error_type_t current_sensor_setup_confi(cJSON *current_sensor_root)
     return SYSTEM_OK;
 }
 
-error_type_t spi_setup_config(const char *json_file_path)
-{
-
-    FILE *read_file = fopen(json_file_path, "r");
-    if (!read_file)
-    {
-        ESP_LOGE(TAG, "failed to read json file");
-    }
-    fseek(read_file, 0, SEEK_END);
-    long file_size = ftell(read_file);
-    rewind(read_file);
-
-    if (file_size <= 0)
-    {
-        ESP_LOGE(TAG, "json file is empty or invalid file size");
-        fclose(read_file);
-        return SYSTEM_NULL_PARAMETER;
-    }
-
-    char *buffer = malloc(file_size + 1);
-    if (!buffer)
-    {
-        ESP_LOGE(TAG, "failed to allocate memory for json buffer");
-        fclose(read_file);
-        return SYSTEM_NULL_PARAMETER;
-    }
-
-    size_t read_size = fread(buffer, 1, file_size, read_file);
-    fclose(read_file);
-    buffer[read_size] = '\0'; // Null-terminate
-
-    cJSON* root = cJSON_Parse(buffer);
-    free(buffer); // Free buffer after parsing
-
-    if (!root) {
-        ESP_LOGE(TAG, "failed to parse the json file");
-        return SYSTEM_NULL_PARAMETER;
-    }
-
-    tank_Setup_config(root);
-    pump_setup_config(root);
-    tank_monitor_setup_config(root);
-    pump_monitor_setup_config(root);
-    level_sensor_setup_config(root);
-    relay_driver_setup_config(root);
-    current_sensor_setup_confi(root);
-
-    cJSON_Delete(root);
-
-    return SYSTEM_OK;
-}
