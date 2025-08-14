@@ -102,7 +102,7 @@ TEST_CASE("setup_config_test", "test_tank_monitor_setup_config"){
     TEST_ASSERT_NOT_EQUAL(NULL, root);
     error_type_t err = tank_monitor_setup_config(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-    ESP_LOGI(TAG, "ptank_monitor_setup_config is sucessful\n");
+    ESP_LOGI(TAG, "tank_monitor_setup_config is sucessful\n");
 
      setup_config_teardown();
 
