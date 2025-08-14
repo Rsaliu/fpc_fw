@@ -10,7 +10,7 @@
 #include <level_sensor.h>
 #include "esp_log.h"
 
-static const char *TAG = "SPI_SETUP_CONFIG";
+static const char *TAG = "SETUP_CONFIG";
 
  static cJSON* get_first_pump_control_unit_array(cJSON* pump_control_unit_json) {
     cJSON* pump_control_units = cJSON_GetObjectItem(pump_control_unit_json, "pump_control_units");
@@ -63,7 +63,7 @@ error_type_t tank_Setup_config(cJSON *tank_json){
     };
 
     tank_t *tank_obj = tank_create(tank_config);
-    if (tank_obj == NULL)
+    if (!tank_obj)
     {
         return SYSTEM_NULL_PARAMETER;
     }
@@ -73,7 +73,7 @@ error_type_t tank_Setup_config(cJSON *tank_json){
 
 error_type_t pump_setup_config(cJSON * pump_json)
 {
-    cJSON* get_pump_arr   = get_first_pump_control_unit_array(json_json);
+    cJSON* get_pump_arr   = get_first_pump_control_unit_array(pump_json);
     if (!get_pump_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -91,11 +91,13 @@ error_type_t pump_setup_config(cJSON * pump_json)
     int pump_id = cJSON_GetObjectItem(pump, "id")->valueint;
     char *pump_make = cJSON_GetObjectItem(pump, "make")->valuestring;
     float pump_power_in_hp = cJSON_GetObjectItem(pump, "power_in_hp")->valuedouble;
+    float current_rating = cJSON_GetObjectItem(pump, "current_rating")->valuedouble;
 
     pump_config_t pump_config = {
         .id = pump_id,
         .make = pump_make,
         .power_in_hp = pump_power_in_hp,
+        .current_rating = current_rating,
     };
 
     pump_t *pump_obj = pump_create(pump_config);
@@ -129,7 +131,7 @@ error_type_t tank_monitor_setup_config(cJSON *tank_monitor_json)
     level_sensor_config_t level_sensor_config = {
         .id = level_sensor_id,
     };
-    level_sensor_t *level_sensor = level_sensor_create(level_sensor_config);
+    level_sensor_t *level_sensor = level_sensor_create(&level_sensor_config);
 
     int tank_id = cJSON_GetObjectItem(tank_monitor, "tank_id")->valueint;
     tank_config_t tank_config = {
@@ -187,7 +189,6 @@ error_type_t pump_monitor_setup_config(cJSON *pump_monitor_json)
         .sensor = current_sensor_obj,
         .pump = pump_obj,
     };
-
     pump_monitor_t *pump_monitor_obj = pump_monitor_create(pump_monitor_config);
     if (pump_monitor_obj == NULL)
     {
@@ -262,7 +263,7 @@ error_type_t level_sensor_setup_config(cJSON *level_sensor_json)
         .level_sensor_protocol = GL_A01_PROTOCOL,
     };
 
-    level_sensor_t *level_sensor_obj = level_sensor_create(level_sensor_config);
+    level_sensor_t *level_sensor_obj = level_sensor_create(&level_sensor_config);
     if (level_sensor_obj == NULL)
     {
         return SYSTEM_NULL_PARAMETER;
