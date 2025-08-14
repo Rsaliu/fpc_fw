@@ -2,13 +2,14 @@
 #define __PUMP_MONITOR_H__
 #include <common_headers.h>
 #include "pump.h"
+#include <current_sensor.h>
 #include <event.h>
 
 
-typedef struct
-{
-    int id;
-} current_sensor_t;
+// typedef struct
+// {
+//     int id;
+// } current_sensor_t;
 
 typedef enum
 {
