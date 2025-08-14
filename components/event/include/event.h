@@ -8,6 +8,7 @@ typedef enum{
     EVENT_PUMP_OVERCURRENT = 3, // Pump is in overcurrent state
     EVENT_PUMP_NORMAL = 4, // Pump is in normal state
     EVENT_UNKNOWN = 5, // Unknown event
+    EVENT_PUMP_UNDERCURRENT = 6, // Pump current supply is below normal
 }event_type_t;
 
 
