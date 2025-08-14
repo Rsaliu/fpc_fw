@@ -2,6 +2,8 @@
 #include <unity.h>
 #include <common_headers.h>
 #include <tank_monitor.h>
+#include <level_sensor.h>
+#include <rs485.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -210,16 +212,20 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
         .full_level_in_mm = 90,
         .low_level_in_mm = 10
     };
-    level_sensor_t *level_sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
-    TEST_ASSERT_NOT_NULL(level_sensor);
 
+    rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
+    rs485_t* rs485 = rs485_create(&rs485_config);
+    level_sensor_config_t level_sensor_config = {4,0x01,rs485, LEVEL_SENSOR_INTERFACE_RS485, GL_A01_PROTOCOL};
+    //level_sensor_t *level_sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
+    level_sensor_t* level_Sensor = level_sensor_create(&level_sensor_config);
+    TEST_ASSERT_NOT_NULL(level_Sensor);
     tank_t* my_tank = tank_create(tank_config);
     // Add a tank monitor
     TEST_ASSERT_NOT_NULL(my_tank);
     tank_monitor_config_t tank_monitor_config = {
         .id = 1,
         .tank = my_tank,
-        .sensor = level_sensor // Assuming level_sensor is initialized properly
+        .sensor = level_Sensor // Assuming level_sensor is initialized properly
     };
     tank_monitor_t *tank_monitor = tank_monitor_create(tank_monitor_config);
     TEST_ASSERT_NOT_NULL(tank_monitor);
