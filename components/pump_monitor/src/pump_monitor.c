@@ -32,7 +32,7 @@ error_type_t current_sensor_get_current(current_sensor_t *sensor, float *current
 
     *current = 6.23; // Simulated value
 
-    ESP_LOGI(TAG, "Current sensor ID: %d, Current value: %.2f amp", sensor->id, (double)(*current));
+    //ESP_LOGI(TAG, "Current sensor ID: %d, Current value: %.2f amp", sensor->id, (double)(*current));
 
     return SYSTEM_OK;
 }
