@@ -1,56 +1,10 @@
-#include "config_manager.h"
+#include "validate_json.h"
 #include <esp_log.h>
 #include <cJSON.h>
 #include <stdlib.h>
 #include <string.h>
 
-static const char *TAG = "CONFIG_MANAGER";
-
-static esp_err_t (*read_config_json_func)(const char *path, char **buffer, size_t *size) = NULL;
-
-esp_err_t read_config_json(const char *path, char **buffer, size_t *size)
-{
-    if (path == NULL || buffer == NULL || size == NULL)
-    {
-        ESP_LOGE(TAG, "Invalid arguments");
-        return ESP_ERR_INVALID_ARG;
-    }
-
-    FILE *file = fopen(path, "r");
-    if (file == NULL)
-    {
-        ESP_LOGE(TAG, "Failed to open file: %s", path);
-        return ESP_FAIL;
-    }
-
-    fseek(file, 0, SEEK_END);
-    *size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    *buffer = (char *)malloc(*size + 1);
-    if (*buffer == NULL)
-    {
-        ESP_LOGE(TAG, "Failed to allocate memory for file contents");
-        fclose(file);
-        return ESP_ERR_NO_MEM;
-    }
-
-    size_t read_size = fread(*buffer, 1, *size, file);
-    if (read_size != *size)
-    {
-        ESP_LOGE(TAG, "Failed to read file: %s", path);
-        free(*buffer);
-        *buffer = NULL;
-        fclose(file);
-        return ESP_FAIL;
-    }
-
-    (*buffer)[*size] = '\0';
-    fclose(file);
-    ESP_LOGI(TAG, "Successfully read file: %s (%zu bytes)", path, *size);
-    return ESP_OK;
-}
-
+static const char *TAG = "VALIDATE_JSON";
 static esp_err_t validate_json_structure(const cJSON *json)
 {
     if (!cJSON_IsObject(json))
@@ -58,8 +12,6 @@ static esp_err_t validate_json_structure(const cJSON *json)
         ESP_LOGE(TAG, "Root is not an object");
         return ESP_FAIL;
     }
-
-  
 
     cJSON *site_id = cJSON_GetObjectItem(json, "Site Id");
     if (!site_id || !cJSON_IsString(site_id) || site_id->valuestring[0] == '\0')
@@ -199,7 +151,8 @@ static esp_err_t validate_json_structure(const cJSON *json)
                 ESP_LOGE(TAG, "\"shape\" in tanks is missing or not a string");
                 return ESP_FAIL;
             }
-            if (strcmp(shape->valuestring, "RECTANGLE") != 0 && strcmp(shape->valuestring, "CYLINDER") != 0)
+           
+            if (strncmp(shape->valuestring, "RECTANGLE", 9) != 0 && strncmp(shape->valuestring, "CYLINDER", 8) != 0)
             {
                 ESP_LOGE(TAG, "\"shape\" in tanks is invalid: %s", shape->valuestring);
                 return ESP_FAIL;
@@ -431,46 +384,21 @@ static esp_err_t validate_json_structure(const cJSON *json)
     return ESP_OK;
 }
 
-esp_err_t validate_config_json(const char *path) {
-    if (path == NULL) {
-        ESP_LOGE(TAG, "Path is NULL");
+esp_err_t validate_json(const char *json_str, size_t size)
+{
+    if (json_str == NULL || size == 0) {
+        ESP_LOGE(TAG, "Invalid arguments");
         return ESP_ERR_INVALID_ARG;
     }
 
-    char *buffer = NULL;
-    size_t size = 0;
-
-
-    if (read_config_json_func == NULL) {
-        read_config_json_func = read_config_json;
-    }
-
-    esp_err_t ret = read_config_json_func(path, &buffer, &size);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to read file: %s", esp_err_to_name(ret));
-        return ret;
-    }
-
-    cJSON *json = cJSON_Parse(buffer);
-    free(buffer);
-
+    cJSON *json = cJSON_ParseWithLength(json_str, size);
     if (json == NULL) {
         const char *error_ptr = cJSON_GetErrorPtr();
-        if (error_ptr != NULL) {
-            ESP_LOGE(TAG, "Invalid JSON: error before: %s", error_ptr);
-        } else {
-            ESP_LOGE(TAG, "Invalid JSON");
-        }
+        ESP_LOGE(TAG, "Invalid JSON: %s", error_ptr ? error_ptr : "Unknown error");
         return ESP_FAIL;
     }
 
-    ret = validate_json_structure(json);
-    cJSON_Delete(json); 
-
-    return ret;
-}
-
-// For test code to override file reading
-void config_manager_set_reader(esp_err_t (*func)(const char *, char **, size_t *)) {
-    read_config_json_func = func;
+    esp_err_t result = validate_json_structure(json);
+    cJSON_Delete(json);
+    return result;
 }

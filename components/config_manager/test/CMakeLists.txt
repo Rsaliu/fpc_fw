@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-idf_component_register(SRCS "test_config_manager.c"
-                      INCLUDE_DIRS "."
-                      REQUIRES unity config_manager
-                      PRIV_REQUIRES json spiffs
-                      )
+idf_component_register(SRC_DIRS "."
+                       INCLUDE_DIRS "."
+                       REQUIRES unity
+                       PRIV_REQUIRES config_manager common json spiffs)
