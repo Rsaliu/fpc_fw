@@ -2,21 +2,30 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
 
+static const char*TAG = "TANK_MONITOR_TASK";
 
-void tank_monitor_task(void* pvParamter){
-   tank_monitor_task_config_t* config = (tank_monitor_task_config_t*) pvParamter;
+void tank_monitor_task(void* pvParameter){
+   tank_monitor_task_config_t* config = (tank_monitor_task_config_t*) pvParameter;
+   if (config == NULL || config->tank_monitor == NULL)
+   {
+      ESP_LOGE(TAG, "Invalide config or invalide tank monitor array");
+      exit(1);
+   }
+   
+   printf("entering the task monitor loop......\n");
    while (1)
    {
-        for (size_t i = 0; i <config->tank_monitor_count; i++)
+        for (int i = 0; i <config->tank_monitor_count; i++)
         {
-            if (config->tank_monitor[i])
-            {
-                tank_monitor_check_level(config->tank_monitor[i]);
+            if (config->tank_monitor[i] == NULL) {
+                ESP_LOGW(TAG, "Monitor[%d] is NULL", i);
             }
             
-        }
-        vTaskDelay(pdMS_TO_TICKS(500));    
-   }
-    
+           tank_monitor_check_level(config->tank_monitor[i]);          
+      }
+      vTaskDelay(pdMS_TO_TICKS(500));  
+  }
+
 }
