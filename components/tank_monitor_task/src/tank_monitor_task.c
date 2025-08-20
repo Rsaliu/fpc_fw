@@ -22,7 +22,7 @@ void tank_monitor_task(void* pvParameter){
             if (config->tank_monitor[i] == NULL) {
                 ESP_LOGW(TAG, "Monitor[%d] is NULL", i);
             }
-            
+            printf("number of monitor[%d]\n", i);
            tank_monitor_check_level(config->tank_monitor[i]);          
       }
       vTaskDelay(pdMS_TO_TICKS(500));  
