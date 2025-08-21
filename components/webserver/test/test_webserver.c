@@ -17,6 +17,7 @@
 #include <config_handler.h>
 #include <logout_handler.h>
 #include <reset_handler.h>
+#include <web_server_setup.h>
 
 const char * WEBSERVER_TEST_TAG = "WEBSERVER_TEST";
 
@@ -214,82 +215,12 @@ TEST_CASE("webserver_test", "test_webserver_add_dummy_route") {
     //start the web server before adding routes
     result = webserver_start(webserver);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    httpd_uri_t uri = {
-        .uri = "/dummy",
-        .method = HTTP_GET,
-        .handler = dummy_handler,
-        .user_ctx = "Test Context"
-    };
-
-    result = webserver_add_route(webserver, &uri);
+    rest_server_context_t *context_ptr = NULL;
+    result = webserver_get_context(webserver, &context_ptr);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    rest_server_context_t * context_ptr;
-    result = webserver_get_context(webserver,&context_ptr);
+    result = setup_web_handlers(webserver,context_ptr);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    TEST_ASSERT_NOT_NULL(context_ptr);
-    printf("base path from test is: %s\n",context_ptr->base_path);
-    httpd_uri_t uri2 = {
-        .uri = "/register",
-        .method = HTTP_POST,
-        .handler = register_handler,
-        .user_ctx = (void*)context_ptr,
-    };
-
-    result = webserver_add_route(webserver, &uri2);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    httpd_uri_t uri3 = {
-        .uri = "/login",
-        .method = HTTP_POST,
-        .handler = login_handler,
-        .user_ctx = (void*)context_ptr,
-    };
-
-    result = webserver_add_route(webserver, &uri3);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    httpd_uri_t uri4 = {
-        .uri = "/config",
-        .method = HTTP_POST,
-        .handler = set_config_handler,
-        .user_ctx = (void*)context_ptr,
-    };
-
-    result = webserver_add_route(webserver, &uri4);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    httpd_uri_t uri5 = {
-        .uri = "/config",
-        .method = HTTP_GET,
-        .handler = get_config_handler,
-        .user_ctx = (void*)context_ptr,
-    };
-
-    result = webserver_add_route(webserver, &uri5);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    httpd_uri_t uri6 = {
-        .uri = "/logout",
-        .method = HTTP_POST,
-        .handler = logout_handler,
-        .user_ctx = (void*)context_ptr,
-    };
-
-    result = webserver_add_route(webserver, &uri6);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    httpd_uri_t uri7 = {
-        .uri = "/reset",
-        .method = HTTP_POST,
-        .handler = reset_handler,
-        .user_ctx = (void*)context_ptr,
-    };
-
-    result = webserver_add_route(webserver, &uri7);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    webserverTearDown();
+    //webserverTearDown();
 }
 
 //dummy test to switch off wifi-ap hotspot
