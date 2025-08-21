@@ -13,6 +13,7 @@
 
 const char *TAG = "WEBSERVER";
 const int RESERVED_SOCKETS = 3; // Number of reserved sockets for internal use
+const int MAX_NUMBER_OF_URI_HANDLERS = 20;
 static const char* ALLOWED_ORIGIN = "*";
 
 typedef enum{
@@ -50,7 +51,7 @@ static esp_err_t init_fs(const char* mount_point, const char* partition_label)
     esp_vfs_spiffs_conf_t conf = {
         .base_path = mount_point,
         .partition_label = partition_label,
-        .max_files = 5,
+        .max_files = 10,
         .format_if_mount_failed = true
     };
     esp_err_t ret = esp_vfs_spiffs_register(&conf);
@@ -186,6 +187,7 @@ error_type_t webserver_init(webserver_t* server){
     ESP_LOGI(TAG, "REST server context initialized with config file path: %s", server->rest_context->config_file_path);
     ESP_LOGI(TAG,"base bath set from webserver is: %s",server->rest_context->base_path);
     server->httpd_config = (httpd_config_t) HTTPD_DEFAULT_CONFIG();
+    server->httpd_config.max_uri_handlers = MAX_NUMBER_OF_URI_HANDLERS;
     server->httpd_config.server_port = server->config->port; // Set the server port
     server->httpd_config.max_open_sockets = server->config->max_connections + RESERVED_SOCKETS; // Reserve 3 sockets for internal use
     server->httpd_config.uri_match_fn = httpd_uri_match_wildcard;
