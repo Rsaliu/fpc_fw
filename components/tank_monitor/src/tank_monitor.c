@@ -184,12 +184,9 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
             return SYSTEM_INVALID_STATE; // Invalid state
     }
 
-     ESP_LOGI(TAG,"entering the tank state\n");
     if(monitor->tank_state != previous_state) {
         // Notify subscribers about the state change
-         ESP_LOGI(TAG,"entering the subscriber loop...\n");
         for (int i = 0; i < monitor->subscriber_count; i++) {
-         ESP_LOGI(TAG,"inside the subscriber loop\n");
             if (monitor->subscribers[i] != NULL && monitor->subscribers[i]->hook != NULL && monitor->subscribers[i]->hook->callback != NULL) {
                 monitor->subscribers[i]->hook->callback(
                     monitor->subscribers[i]->hook->context,
