@@ -29,7 +29,7 @@ webserver_config_t webserver_config = {
     .mdns_instance = "FPC-WebServer", // MDNS instance name
     .mdns_hostname = "fpc-webserver", // MDNS hostname
     .base_path = "/spiffs", // Base path for the web server
-    .web_mount_point = "/web", // Web mount point for serving files
+    .web_mount_point = "/spiffs", // Web mount point for serving files
     .web_partition_label = "spiffs", // Partition label for the web server
     .config_file_path = "config.json" // Path to the configuration file
 };
