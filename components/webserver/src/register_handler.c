@@ -18,29 +18,36 @@ esp_err_t register_handler(httpd_req_t *req){
         return ESP_ERR_NO_MEM; // Handle null request
     }
     inject_cors_options(req); // Set CORS headers for the request
+    rest_server_context_t * context = (rest_server_context_t *)req->user_ctx;
+    char *buf = (char *)(context->scratch);
     if (err != ESP_OK) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to check user registration status");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to check user registration status",buf,SCRATCH_BUFSIZE)
+            );
         return err; // Handle error checking user registration status
     }
     if (result) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "User already registered");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("User already registered",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle already registered user
     }
 
     ESP_LOGI(REGISTER_HANDLER_TAG, "Handling registration request for URI: %s", req->uri);
-        //****** Leaving this code here, we may need it soon */
-    rest_server_context_t * context = (rest_server_context_t *)req->user_ctx;
-    char *buf = (char *)(context->scratch);
     err = retrieve_http_request_body(req, buf, SCRATCH_BUFSIZE);
     if (err != ESP_OK) {
         ESP_LOGE(REGISTER_HANDLER_TAG, "Failed to retrieve HTTP request body: %s", esp_err_to_name(err));
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to retrieve request body");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to retrieve request body",buf,SCRATCH_BUFSIZE)
+            );
         return err; // Handle request body retrieval failure
     }
     ESP_LOGI(REGISTER_HANDLER_TAG, "Received registration data: %s", buf);
     cJSON *root = cJSON_Parse(buf);
     if (root == NULL) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON format");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("Invalid JSON format",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle JSON parsing error
     }
 
@@ -50,24 +57,34 @@ esp_err_t register_handler(httpd_req_t *req){
 
     if(strlen(username) == 0 || strlen(username) > CONFIG_MAX_USERNAME_LENGTH) {
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid username length");
+        
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("Invalid username length",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle invalid username length
     }
 
     if(strlen(password1) == 0 || strlen(password1) > CONFIG_MAX_PASSWORD_LENGTH) {
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid password length");
+        
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("Invalid password length",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_ERR_INVALID_SIZE; // Handle invalid password length
     }
 
     if(strlen(password2) == 0 || strlen(password2) > CONFIG_MAX_PASSWORD_LENGTH) {
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid password length");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("Invalid password length",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle invalid password length
     }
     if(strncmp(password1,password2,CONFIG_MAX_PASSWORD_LENGTH)){
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Passwords do not match");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("Passwords do not match",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle password mismatch
     }
 
@@ -78,17 +95,23 @@ esp_err_t register_handler(httpd_req_t *req){
      err = auth_store_set(username, password1);
     if (err != ESP_OK) {
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to store credentials");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to store credentials",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle storage failure   
     }
     cJSON_Delete(root);
 
     err = set_user_registered_flag();
     if (err != ESP_OK) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to set user registration flag");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to set user registration flag",buf,SCRATCH_BUFSIZE)
+            );
         return err; // Handle error setting user registration flag
     }
     
-    httpd_resp_sendstr(req, "Registration successful");
+    httpd_resp_sendstr(req,
+         create_response_json("Registration successful",buf,SCRATCH_BUFSIZE)
+        );
     return ESP_OK; // Return success
 }

@@ -22,7 +22,9 @@ esp_err_t set_config_handler(httpd_req_t *req){
     inject_cors_options(req); // Set CORS headers for the request
     if (err != ESP_OK) {
         ESP_LOGE(CONFIG_HANDLER_TAG, "Failed to retrieve HTTP request body: %s", esp_err_to_name(err));
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to retrieve request body");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to retrieve request body",buf,SCRATCH_BUFSIZE)
+            );
         return err; // Handle request body retrieval failure
     }
     ESP_LOGI(CONFIG_HANDLER_TAG, "Received config data: %s", buf);
@@ -33,7 +35,9 @@ esp_err_t set_config_handler(httpd_req_t *req){
     }
     cJSON *root = cJSON_Parse(buf);
     if (root == NULL) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON format");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("Invalid JSON format",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle JSON parsing error
     }
 
@@ -44,7 +48,9 @@ esp_err_t set_config_handler(httpd_req_t *req){
 
     if (context == NULL) {
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "context or base path is null");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("context or base path is null",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_ERR_NO_MEM; // Handle null base path
     }
     char *base_path = context->base_path;
@@ -52,7 +58,9 @@ esp_err_t set_config_handler(httpd_req_t *req){
     if (base_path == NULL || config_file_path == NULL) {
         ESP_LOGE(CONFIG_HANDLER_TAG, "Base path or config file path is null");
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Base path or config file path is null");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Base path or config file path is null",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_ERR_NO_MEM; // Handle null base path or config file path 
     }
     ESP_LOGI(CONFIG_HANDLER_TAG, "base path: %s", base_path);
@@ -66,13 +74,17 @@ esp_err_t set_config_handler(httpd_req_t *req){
     if (save_result != SYSTEM_OK) {
         ESP_LOGE(CONFIG_HANDLER_TAG, "Failed to save configuration: %d", save_result);
         cJSON_Delete(root);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to save configuration");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to save configuration",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle configuration saving failure
     }
     cJSON_Delete(root); // Free the cJSON object after saving
     // Send a response indicating success
     httpd_resp_set_status(req, HTTPD_200);
-    err = httpd_resp_sendstr(req, "Configuration saved successfully");
+    err = httpd_resp_sendstr(req,
+        create_response_json("Configuration saved successfully",buf,SCRATCH_BUFSIZE)
+        );
     if(err != ESP_OK) {
         ESP_LOGE(CONFIG_HANDLER_TAG, "Failed to send response: %s", esp_err_to_name(err));
         return err; // Handle response sending failure
@@ -116,6 +128,8 @@ esp_err_t get_config_handler(httpd_req_t *req){
         return ESP_ERR_NO_MEM; // Handle null request
     }
     inject_cors_options(req); // Set CORS headers for the request
+    rest_server_context_t * context = (rest_server_context_t *)req->user_ctx;
+    char *buf = (char *)(context->scratch);
     ESP_LOGI(CONFIG_HANDLER_TAG, "Handling config request for URI: %s", req->uri);
     esp_err_t err;
     session_t *session = NULL;
@@ -123,17 +137,13 @@ esp_err_t get_config_handler(httpd_req_t *req){
     if (err != ESP_OK) {
         return err; // Handle authentication failure
     }
-    rest_server_context_t *context = (rest_server_context_t *)(req->user_ctx);
-    if(context == NULL){
-        ESP_LOGE(CONFIG_HANDLER_TAG, "context is null");
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "context is null");
-        return ESP_ERR_NO_MEM; // Handle null base path or config file path     
-    }
     char *base_path = context->base_path;
     char *config_file_path = context->config_file_path;
     if (base_path == NULL || config_file_path == NULL) {
         ESP_LOGE(CONFIG_HANDLER_TAG, "Base path or config file path is null");
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Base path or config file path is null");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Base path or config file path is null",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_ERR_NO_MEM; // Handle null base path or config file path 
     }
     ESP_LOGI(CONFIG_HANDLER_TAG, "base path: %s", base_path);
@@ -144,7 +154,9 @@ esp_err_t get_config_handler(httpd_req_t *req){
     FILE *file = fopen(full_config_path, "r");
     if (file == NULL) {
         ESP_LOGE(CONFIG_HANDLER_TAG, "Failed to open config file");
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to open config file");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to open config file",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle file open failure
     }
 
@@ -154,20 +166,26 @@ esp_err_t get_config_handler(httpd_req_t *req){
 
     if (file_size <= 0 || file_size >= SCRATCH_BUFSIZE) {
         fclose(file);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid file size");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+            create_response_json("Invalid file size",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle invalid file size
     }
     char * read_buffer = (context->scratch);
     if (read_buffer == NULL) {
         fclose(file);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Scratch buffer is null");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Scratch buffer is null",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_ERR_NO_MEM; // Handle null scratch buffer
     }
     size_t read_size = fread(read_buffer, 1, file_size, file);
     fclose(file);
 
     if (read_size != file_size) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read config file");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Failed to read config file",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_FAIL; // Handle read failure
     }
     read_buffer[read_size] = '\0'; // Null-terminate the string
