@@ -1,4 +1,4 @@
-let isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+let isLoggedIn = localStorage.getItem("isLoggedIn");
 
 function redirectTo(page) {
   if (page === 'config_ui.html' && !isLoggedIn) {
@@ -18,25 +18,17 @@ function updateUI() {
     loginTabLink.style.display = "none";
     registerTabLink.style.display = "none";
     configTabLink.style.display = "inline-block";
-    resetTabLink.style.display = "inline-block";
+    //resetTabLink.style.display = "inline-block";
     configTabLink.disabled = false;
-    resetTabLink.disabled = false;
+    // resetTabLink.disabled = false;
   } else {
     loginTabLink.style.display = "inline-block";
     registerTabLink.style.display = "inline-block";
     configTabLink.style.display = "none";
-    resetTabLink.style.display = "none";
+    //resetTabLink.style.display = "none";
     loginTabLink.textContent = "Login";
     loginTabLink.onclick = () => redirectTo('login_ui.html');
   }
-}
-
-function reset() {
-  isLoggedIn = false;
-  localStorage.removeItem("isLoggedIn");
-  updateUI();
-  alert("Login details cleared successfully!");
-  window.location.href = 'login_ui.html';
 }
 
 // Initialize the UI
