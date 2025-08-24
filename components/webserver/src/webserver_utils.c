@@ -60,3 +60,13 @@ esp_err_t parse_cookie(const char *cookie_hdr, const char *name, char *out, size
     }
     return ESP_ERR_NOT_FOUND;
 }
+
+
+const char *create_response_json(const char *message, char *buffer, size_t buffer_size){
+    const char *json_format = "{ \"message\": \"%s\" }";
+    //size_t json_size = snprintf(NULL, 0, json_format, message) + 1; // +1 for null terminator
+    if (buffer != NULL) {
+        snprintf(buffer,buffer_size,json_format, message);
+    }
+    return buffer;
+}

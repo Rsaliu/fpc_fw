@@ -25,17 +25,20 @@ esp_err_t reset_handler(httpd_req_t *req) {
     err = clear_credential_store();
     if (err != ESP_OK) {
         ESP_LOGE("RESET_HANDLER", "Failed to clear credential store: %s", esp_err_to_name(err));
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to clear credential store");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+             create_response_json("Failed to clear credential store",buf,SCRATCH_BUFSIZE)
+            );
         return err; // Handle credential store clearing failure
     }
     ESP_LOGI("RESET_HANDLER", "Credential store cleared successfully");
     // clear configuration file
-    rest_server_context_t * context = (rest_server_context_t *)req->user_ctx;
     char *base_path = context->base_path;
     char *config_file_path = context->config_file_path;
     if (base_path == NULL || config_file_path == NULL) {
         ESP_LOGE("RESET_HANDLER", "Base path or config file path is null");
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Base path or config file path is null");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+            create_response_json("Base path or config file path is null",buf,SCRATCH_BUFSIZE)
+            );
         return ESP_ERR_NO_MEM; // Handle null base path or config file path 
     }
     char full_config_path[50];
@@ -44,5 +47,7 @@ esp_err_t reset_handler(httpd_req_t *req) {
     remove(full_config_path);
     ESP_LOGI("RESET_HANDLER", "Configuration file cleared successfully");
     httpd_resp_set_status(req, HTTPD_200);
-    return httpd_resp_sendstr(req, "Reset successful");
+    return httpd_resp_sendstr(req,
+        create_response_json("Reset successful",buf,SCRATCH_BUFSIZE)
+        );
 }
