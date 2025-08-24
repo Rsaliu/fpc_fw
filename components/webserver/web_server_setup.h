@@ -95,61 +95,16 @@ error_type_t setup_web_handlers(webserver_t* webserver, rest_server_context_t * 
         return result; // Handle error in adding route
     }
 
-    // httpd_uri_t options_uri = {
-    //     .uri = "/",
-    //     .method = HTTP_OPTIONS,
-    //     .handler = cors_preflight_handler,
-    //     .user_ctx = (void*)context_ptr
-    // };
-    // result = webserver_add_route(webserver, &cors_preflight_handler);
-    // if (result != SYSTEM_OK) {
-    //     ESP_LOGE("WEB_HANDLERS_SETUP", "Failed to add cors_preflight_handler route");
-    //     return result; // Handle error in adding route
-    // }
 
-    httpd_uri_t root_uri = {
-        .uri = "/",
+    httpd_uri_t common_get_uri = {
+        .uri = "/*",
         .method = HTTP_GET,
-        .handler = root_page_handler,
+        .handler = rest_common_get_handler,
         .user_ctx = (void*)context_ptr
     };
-
-    result = webserver_add_route(webserver, &root_uri);
+    result = webserver_add_route(webserver, &common_get_uri);
     if (result != SYSTEM_OK) {
-        ESP_LOGE("WEB_HANDLERS_SETUP", "Failed to add root_page_handler route");
-        return result; // Handle error in adding route
-    }
-    httpd_uri_t login_page_uri = {
-        .uri = "/login.html",
-        .method = HTTP_GET,
-        .handler = login_page_handler,
-        .user_ctx = (void*)context_ptr,    
-    };
-    result = webserver_add_route(webserver, &login_page_uri);
-    if (result != SYSTEM_OK) {
-        ESP_LOGE("WEB_HANDLERS_SETUP", "Failed to add login_page_handler route");
-        return result; // Handle error in adding route
-    }
-    httpd_uri_t register_page_uri = {
-        .uri = "/register.html",
-        .method = HTTP_GET,
-        .handler = register_page_handler,
-        .user_ctx = (void*)context_ptr,    
-    };  
-    result = webserver_add_route(webserver, &register_page_uri);
-    if (result != SYSTEM_OK) {
-        ESP_LOGE("WEB_HANDLERS_SETUP", "Failed to add register_page_handler route");
-        return result; // Handle error in adding route
-    }
-    httpd_uri_t config_page_uri = {
-        .uri = "/config.html",
-        .method = HTTP_GET,
-        .handler = config_page_handler,
-        .user_ctx = (void*)context_ptr,
-    };
-    result = webserver_add_route(webserver, &config_page_uri);
-    if (result != SYSTEM_OK) {
-        ESP_LOGE("WEB_HANDLERS_SETUP", "Failed to add config_page_handler route");
+        ESP_LOGE("WEB_HANDLERS_SETUP", "Failed to add common_get_handler route");
         return result; // Handle error in adding route
     }
     ESP_LOGE("WEB_HANDLERS_SETUP", "set up all uri successfully");

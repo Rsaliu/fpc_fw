@@ -1,7 +1,7 @@
 #include <webserver_utils.h>
 #include "esp_http_server.h"
 #include "esp_log.h"
-
+#define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)
 esp_err_t retrieve_http_request_body(httpd_req_t *req, char *buffer, size_t buffer_size) {
     if (req == NULL || buffer == NULL || buffer_size == 0) {
         return ESP_ERR_INVALID_ARG; // Handle null or invalid arguments
@@ -59,6 +59,45 @@ esp_err_t parse_cookie(const char *cookie_hdr, const char *name, char *out, size
         token = strtok_r(NULL, ";", &saveptr);
     }
     return ESP_ERR_NOT_FOUND;
+}
+
+esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filepath)
+{
+    const char *type = "text/plain";
+    if (CHECK_FILE_EXTENSION(filepath, ".html")) {
+        type = "text/html";
+    } else if (CHECK_FILE_EXTENSION(filepath, ".js")) {
+        type = "application/javascript";
+    } else if (CHECK_FILE_EXTENSION(filepath, ".css")) {
+        type = "text/css";
+    } else if (CHECK_FILE_EXTENSION(filepath, ".png")) {
+        type = "image/png";
+    } else if (CHECK_FILE_EXTENSION(filepath, ".ico")) {
+        type = "image/x-icon";
+    } else if (CHECK_FILE_EXTENSION(filepath, ".svg")) {
+        type = "text/xml";
+    }
+    return httpd_resp_set_type(req, type);
+}
+
+
+void get_content_directory_name(const char *filepath, char* buff, size_t buff_size)
+{
+
+    if (CHECK_FILE_EXTENSION(filepath, ".html")) {
+        strncpy(buff, "html", buff_size);
+    } else if (CHECK_FILE_EXTENSION(filepath, ".js")) {
+        strncpy(buff, "js", buff_size);
+    } else if (CHECK_FILE_EXTENSION(filepath, ".css")) {
+        strncpy(buff, "css", buff_size);
+    } else if (CHECK_FILE_EXTENSION(filepath, ".png")) {
+        strncpy(buff, "img", buff_size);
+    } else if (CHECK_FILE_EXTENSION(filepath, ".ico")) {
+        strncpy(buff, "img", buff_size);
+    } else if (CHECK_FILE_EXTENSION(filepath, ".svg")) {
+        strncpy(buff, "img", buff_size);
+    }
+    else;
 }
 
 
