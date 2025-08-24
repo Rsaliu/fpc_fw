@@ -192,7 +192,8 @@ esp_err_t get_config_handler(httpd_req_t *req){
     ESP_LOGI(CONFIG_HANDLER_TAG, "Read configuration data: %s", read_buffer);
     // Send the configuration as a response
     httpd_resp_set_status(req, HTTPD_200);
-    err = httpd_resp_sendstr(req, read_buffer);
+    err = httpd_resp_sendstr(req,
+        read_buffer);
     if (err != ESP_OK) {
         ESP_LOGE(CONFIG_HANDLER_TAG, "Failed to send response: %s", esp_err_to_name(err));
         return err; // Handle response sending failure
