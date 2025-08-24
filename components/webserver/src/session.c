@@ -63,7 +63,7 @@ void set_session_cookie(httpd_req_t *req, const session_t *s)
     // Add attributes you want: HttpOnly, Secure (if HTTPS), SameSite, Max-Age, Path
     static char cookie[180];
     snprintf(cookie, sizeof(cookie),
-             "SID=%s; Path=/; HttpOnly; SameSite=None; Max-Age=%d",
+             "SID=%s; Path=/; HttpOnly; Max-Age=%d",
              s->token, (int)(SESSION_LIFETIME_US/1000000));
     ESP_LOGI("SESSION", "Setting session cookie: %s", cookie);
     httpd_resp_set_hdr(req, "Set-Cookie", cookie);
