@@ -14,13 +14,13 @@ esp_err_t auth_handler(httpd_req_t *req,session_t **session) {
     esp_err_t err = httpd_req_get_hdr_value_str(req, "Cookie", cookie_hdr, sizeof(cookie_hdr));
     if ( err != ESP_OK) {
         ESP_LOGE(AUTH_HANDLER_TAG, "Failed to get Cookie header %s",esp_err_to_name(err));
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Cookie header not found");
+        httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Cookie header not found");
         return ESP_FAIL; // Handle missing cookie header
     }
     ESP_LOGI(AUTH_HANDLER_TAG, "Cookie header: %s", cookie_hdr);
     if (parse_cookie(cookie_hdr, "SID", sid, sizeof(sid)) != ESP_OK) {
         ESP_LOGE(AUTH_HANDLER_TAG, "Session ID not found in Cookie header");
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Session ID not found in Cookie header");
+        httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Session ID not found in Cookie header");
         return ESP_FAIL; // Handle missing session ID
     }
     ESP_LOGI(AUTH_HANDLER_TAG, "Session ID: %s", sid);
