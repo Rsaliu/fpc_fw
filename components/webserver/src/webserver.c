@@ -74,6 +74,24 @@ static esp_err_t init_fs(const char* mount_point, const char* partition_label)
     } else {
         ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
     }
+
+    // list files in the SPIFFS partition
+    ESP_LOGI(TAG, "SPIFFS partition mounted successfully at %s", mount_point);
+    DIR *dir = opendir(mount_point);
+    if (dir == NULL) {
+        ESP_LOGE(TAG, "Failed to open directory: %s", mount_point);
+        return ESP_FAIL; // Handle directory opening failure
+    }
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) { // Check if it's a regular file
+            ESP_LOGI(TAG, "File: %s", entry->d_name);
+        } else if (entry->d_type == DT_DIR) { // Check if it's a directory
+            ESP_LOGI(TAG, "Directory: %s", entry->d_name);
+        }
+    }
+    closedir(dir); // Close the directory after listing files
+    ESP_LOGI(TAG, "File system initialized successfully");
     return ESP_OK;
 }
 
