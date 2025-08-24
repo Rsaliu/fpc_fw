@@ -15,7 +15,7 @@ function register(event) {
     return;
   }
   console.log("will send data, passwords match");
-  fetch("https://fpc-webserver.local/register", {
+  fetch("http://fpc-webserver.local/register", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

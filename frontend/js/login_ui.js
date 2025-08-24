@@ -6,11 +6,12 @@ function login(event) {
     password: form.pwd.value
   };
 
-  fetch("https://fpc-webserver.local/login", {
+  fetch("http://fpc-webserver.local/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
+    credentials: "include",       // <-- required for cross-origin cookies
     body: JSON.stringify(formData)
   })
   .then(response => {
