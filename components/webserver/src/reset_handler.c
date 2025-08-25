@@ -14,15 +14,9 @@ esp_err_t reset_handler(httpd_req_t *req) {
     inject_cors_options(req); // Set CORS headers for the request
     rest_server_context_t * context = (rest_server_context_t *)req->user_ctx;
     char *buf = (char *)(context->scratch);
-    
+
     session_t *session = NULL;
     esp_err_t err;
-    // removing the need for auth for reset for now because, there is no reset password feature at the moment
-
-    // esp_err_t err = auth_handler(req,&session);
-    // if (err != ESP_OK) {
-    //     return err; // Handle authentication failure
-    // }
     ESP_LOGI("RESET_HANDLER", "Handling reset request for URI: %s", req->uri);
     
     // clear sessions

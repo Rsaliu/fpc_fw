@@ -11,7 +11,6 @@ static error_type_t save_config_to_file(cJSON *config,char* config_file_path);
 esp_err_t set_config_handler(httpd_req_t *req){
     esp_err_t err;
     if (req == NULL) {
-        //httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "null request");
         return ESP_ERR_NO_MEM; // Handle null request
     }
 
