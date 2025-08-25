@@ -6,8 +6,10 @@
 #include <rs485.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "esp_log.h"
 
 pump_control_unit_t *pump_control_unit = NULL;
+static const char* TAG = "PUMP_CONTROL_UNIT";
 
 void pumpControlUnitSetUp(void) {
     // Set up code before each test
@@ -274,11 +276,11 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
     result = tank_monitor_get_state(tank_monitor, &tank_monitor_state);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_EQUAL(TANK_MONITOR_INITIALIZED, tank_monitor_state);
-    printf("Tank monitor state is initialized\n");
+    ESP_LOGI(TAG,"Tank monitor state is initialized");
     // Add the relay to the tank monitor
     result = pump_control_add_relay_to_tank_monitor(pump_control_unit, 1, 1);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    printf("Relay added to tank monitor successfully\n");
+    ESP_LOGI(TAG,"Relay added to tank monitor successfully");
     // Remove the relay from the tank monitor
     result = pump_control_unit_remove_relay_from_tank_monitor(pump_control_unit, 1, 1);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);

@@ -5,9 +5,10 @@
 #include <string.h>
 #include "driver/uart.h"
 #include "driver/gpio.h"
+#include "esp_log.h"
+
+
 #define BUF_SIZE    (127)
-
-
 
 struct rs485_t
 {
@@ -18,6 +19,8 @@ struct rs485_t
     int baud_rate;
     bool activate;
 };
+
+static const char* TAG = "RS485";
 
 rs485_t* rs485_create(const rs485_config_t* config){
     if (config == NULL)
@@ -58,16 +61,14 @@ error_type_t rs485_init( rs485_t* rs485_obj){
    };
 
     // configure uart pin
-
     uart_param_config(rs485_obj->uart_num, &uart_config);
-    uart_set_pin(rs485_obj->uart_num, rs485_obj->rs485_di_pin ,rs485_obj->rs485_ro_pin, UART_PIN_NO_CHANGE , UART_PIN_NO_CHANGE );
+    uart_set_pin(rs485_obj->uart_num, rs485_obj->rs485_di_pin ,rs485_obj->rs485_ro_pin, rs485_obj->rs485_dir_pin  , UART_PIN_NO_CHANGE );
     uart_driver_install(rs485_obj->uart_num, BUF_SIZE*2,0,0,NULL,0);
 
-    //configure gpio pin
-    gpio_set_direction(rs485_obj->rs485_dir_pin, GPIO_MODE_OUTPUT);
+    //configure uart set mode   
+     uart_set_mode(rs485_obj->uart_num, UART_MODE_RS485_HALF_DUPLEX); // this switch the dir automatically to controll
+                                                                    // the mode of communication i.e from high to low                                
 
-    gpio_set_level(rs485_obj->rs485_dir_pin, 0); // 0 -> LOW, 1 -> HIGH
-                                      // set the rs485 to receiver mode                                  
     rs485_obj->activate = true;
 
     return SYSTEM_OK;
@@ -76,17 +77,18 @@ error_type_t rs485_init( rs485_t* rs485_obj){
 error_type_t rs485_write( rs485_t* rs485_obj, const char* data, size_t buffer_size){
     if (rs485_obj == NULL)
     {
+        ESP_LOGE(TAG," rs485 is returing null\n");
         return SYSTEM_NULL_PARAMETER;
     }
 
     if(!rs485_obj->activate){
+        ESP_LOGE(TAG," rs485 is returing invalid state\n");
         return SYSTEM_INVALID_STATE;
     }
-    gpio_set_level(rs485_obj->rs485_dir_pin, 1);
+
     uart_write_bytes(rs485_obj->uart_num, data, buffer_size);
     uart_wait_tx_done(rs485_obj->uart_num, portMAX_DELAY);
-    gpio_set_level(rs485_obj->rs485_dir_pin, 0);
-    printf("sent data sucessfully");
+    ESP_LOGI(TAG,"sent data sucessfully");
 
     return SYSTEM_OK;
  }
@@ -96,12 +98,13 @@ error_type_t rs485_read( rs485_t* rs485_obj, char* data, size_t buffer_size, int
         return SYSTEM_NULL_PARAMETER;
     }
     
-    *read_size = uart_read_bytes(rs485_obj->uart_num, data, buffer_size, pdMS_TO_TICKS(200)); 
+    *read_size = uart_read_bytes(rs485_obj->uart_num, data, buffer_size, -1); 
     if (*read_size != -1)
     {
-         printf("received data sucessfully\n");
+         ESP_LOGI(TAG,"received data sucessfully\n");
     }
-       
+
+    ESP_LOGI(TAG,"read size: %d\n", *read_size);      
       return SYSTEM_OK;
  }
 

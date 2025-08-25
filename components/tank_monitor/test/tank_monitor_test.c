@@ -4,13 +4,15 @@
 #include <rs485.h>
 #include <string.h>
 #include <stdio.h>
+#include "esp_log.h"
 
 tank_monitor_t *monitor = NULL;
+static const char* TAG = "TANK_MONITOR";
 
 tank_state_machine_state_t tank_state_machine_state = TANK_STATE_MACHINE_NORMAL_STATE;
 void test_callback(void* context,int actuator_id, event_type_t event,int monitor_id) {
     // Example callback function for tank monitor events
-    printf("Tank state changed to: %d for monitor ID: %d, actuator ID: %d\n", event, monitor_id,actuator_id);
+    ESP_LOGI(TAG,"Tank state changed to: %d for monitor ID: %d, actuator ID: %d\n", event, monitor_id,actuator_id);
     
     // Simulate changing the state based on the event
     if (event == EVENT_TANK_FULL_STATE) {
@@ -161,10 +163,10 @@ TEST_CASE("tank_monitor_test", "test_tank_monitor_print_info_into_buffer"){
     char buffer[256];
     result = tank_monitor_print_info_into_buffer(monitor,buffer, 256);
     TEST_ASSERT_EQUAL(SYSTEM_OK,result);
-    printf("lenght of expected: %d\n",strlen(expected_buffer_content));
-    printf("lenght of actual: %d\n",strlen(buffer));
-    printf("\nExpected ouput:\n %s\n",expected_buffer_content); 
-    printf("\nActual ouput:\n %s\n",buffer);
+    ESP_LOGI(TAG,"lenght of expected: %d\n",strlen(expected_buffer_content));
+    ESP_LOGI(TAG,"lenght of actual: %d\n",strlen(buffer));
+    ESP_LOGI(TAG,"\nExpected ouput:\n %s\n",expected_buffer_content); 
+    ESP_LOGI(TAG,"\nActual ouput:\n %s\n",buffer);
     int value = strcmp(buffer, expected_buffer_content);
     TEST_ASSERT_EQUAL(value,0);
     tankMonitorTearDown();

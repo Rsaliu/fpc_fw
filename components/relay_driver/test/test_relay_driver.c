@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "unity.h"
+#include "esp_log.h"
 
 relay_t *relay = NULL;
+static const char* TAG = "RELAY";
 
 void relaySetUp(void) {
     // relaySetup before each test
@@ -22,7 +24,7 @@ void relayTearDown(void) {
 TEST_CASE("relay_test", "test_relay_create") {
     relaySetUp();
     TEST_ASSERT_NOT_NULL(relay);
-    printf("relay create sucessful");
+    ESP_LOGI(TAG,"relay create sucessful");
     relayTearDown();
 }
 
@@ -34,7 +36,7 @@ TEST_CASE("relay_test", "test_relay_init") {
     result = relay_check_state(relay,&state);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_EQUAL(RELAY_OFF, state);
-    printf("relay init sucessful");
+    ESP_LOGI(TAG,"relay init sucessful");
     relayTearDown();
 }
 
@@ -49,7 +51,7 @@ TEST_CASE("relay_test", "test_relay_deinit") {
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     result = relay_check_state(relay,&state);
     TEST_ASSERT_EQUAL(SYSTEM_INVALID_STATE, result);
-    printf("relay deinit sucessful");
+    ESP_LOGI(TAG,"relay deinit sucessful");
     relayTearDown();
 }
 
@@ -64,14 +66,14 @@ TEST_CASE("relay_test", "test_relay_switch") {
     result = relay_check_state(relay,&state);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_EQUAL(RELAY_ON, state);
-    printf("switch on sucessful");
+    ESP_LOGI(TAG,"switch on sucessful");
     state = RELAY_OFF; 
     result = relay_switch(relay, state);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     result = relay_check_state(relay,&state);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_EQUAL(RELAY_OFF, state);
-    printf("switch off sucessful");
+    ESP_LOGI(TAG,"switch off sucessful");
     relayTearDown();
 }
 
