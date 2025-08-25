@@ -8,7 +8,6 @@ esp_err_t auth_handler(httpd_req_t *req,session_t **session) {
     char cookie_hdr[128];
     char sid[65];
     if (req == NULL) {
-        //httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "null request");
         return ESP_ERR_NO_MEM; // Handle null request
     }
     esp_err_t err = httpd_req_get_hdr_value_str(req, "Cookie", cookie_hdr, sizeof(cookie_hdr));

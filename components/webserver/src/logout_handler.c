@@ -10,7 +10,6 @@ const char *LOGOUT_HANDLER_TAG = "LOGOUT_HANDLER";
 
 esp_err_t logout_handler(httpd_req_t *req) {
     if (req == NULL) {
-        //httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "null request");
         return ESP_ERR_NO_MEM; // Handle null request
     }
     inject_cors_options(req); // Set CORS headers for the request
