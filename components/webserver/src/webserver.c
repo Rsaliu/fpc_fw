@@ -9,16 +9,12 @@
 #include "esp_wifi.h"
 #include "esp_http_server.h"
 #include "nvs_flash.h"
+#include <credential_store.h>
 
 const char *TAG = "WEBSERVER";
 const int RESERVED_SOCKETS = 3; // Number of reserved sockets for internal use
-#define SCRATCH_BUFSIZE (10240)
-//const int SCRATCH_BUFSIZE = 10240; // Size of the scratch buffer for HTTP server
-
-typedef struct rest_server_context {
-    char base_path[ESP_VFS_PATH_MAX + 1];
-    char scratch[SCRATCH_BUFSIZE];
-} rest_server_context_t;
+const int MAX_NUMBER_OF_URI_HANDLERS = 20;
+static const char* ALLOWED_ORIGIN = "*";
 
 typedef enum{
     WEBSERVER_NOT_INITIALIZED = 0, // Web server is not initialized
@@ -34,7 +30,7 @@ struct webserver_t {
     httpd_config_t httpd_config; // HTTP server configuration
     webserver_state_t status; // Current state of the web server
 };
-
+static esp_err_t cors_preflight_handler(httpd_req_t *req);
 webserver_t* webserver_create(const webserver_config_t* config){
     if (config == NULL) {
         return NULL; // Handle null configuration
@@ -55,7 +51,7 @@ static esp_err_t init_fs(const char* mount_point, const char* partition_label)
     esp_vfs_spiffs_conf_t conf = {
         .base_path = mount_point,
         .partition_label = partition_label,
-        .max_files = 5,
+        .max_files = 10,
         .format_if_mount_failed = true
     };
     esp_err_t ret = esp_vfs_spiffs_register(&conf);
@@ -78,6 +74,24 @@ static esp_err_t init_fs(const char* mount_point, const char* partition_label)
     } else {
         ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
     }
+
+    // list files in the SPIFFS partition
+    ESP_LOGI(TAG, "SPIFFS partition mounted successfully at %s", mount_point);
+    DIR *dir = opendir(mount_point);
+    if (dir == NULL) {
+        ESP_LOGE(TAG, "Failed to open directory: %s", mount_point);
+        return ESP_FAIL; // Handle directory opening failure
+    }
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) { // Check if it's a regular file
+            ESP_LOGI(TAG, "File: %s", entry->d_name);
+        } else if (entry->d_type == DT_DIR) { // Check if it's a directory
+            ESP_LOGI(TAG, "Directory: %s", entry->d_name);
+        }
+    }
+    closedir(dir); // Close the directory after listing files
+    ESP_LOGI(TAG, "File system initialized successfully");
     return ESP_OK;
 }
 
@@ -170,14 +184,28 @@ error_type_t webserver_init(webserver_t* server){
         ESP_LOGE(TAG, "Failed to initialize file system: %s", esp_err_to_name(ret));
         return SYSTEM_OPERATION_FAILED; // Handle file system initialization failure
     }
+    ret = credential_store_init();
+    if (ret != ESP_OK) {
+        cleanup_mdns_netbios();
+        ESP_LOGE(TAG, "Failed to initialize file system: %s", esp_err_to_name(ret));
+        return SYSTEM_OPERATION_FAILED; // Handle file system initialization failure
+    }
+    ESP_LOGI(TAG, "secure initialized successfully");
    server->rest_context = calloc(1, sizeof(rest_server_context_t));
     if(server->rest_context == NULL) {
         cleanup_mdns_netbios();
         ESP_LOGE(TAG, "Failed to allocate memory for REST server context");
         return SYSTEM_OPERATION_FAILED; // Handle memory allocation failure
     }
-    strlcpy(server->rest_context->base_path, server->config->base_path, sizeof(server->rest_context->base_path));
+    memset(server->rest_context->base_path,0,sizeof(server->rest_context->base_path));
+    strlcpy(server->rest_context->base_path, server->config->web_mount_point, sizeof(server->rest_context->base_path));
+    memset(server->rest_context->scratch, 0, sizeof(server->rest_context->scratch));
+    strlcpy(server->rest_context->config_file_path, server->config->config_file_path, sizeof(server->rest_context->config_file_path));
+    ESP_LOGI(TAG, "REST server context initialized with base path: %s", server->rest_context->base_path);
+    ESP_LOGI(TAG, "REST server context initialized with config file path: %s", server->rest_context->config_file_path);
+    ESP_LOGI(TAG,"base bath set from webserver is: %s",server->rest_context->base_path);
     server->httpd_config = (httpd_config_t) HTTPD_DEFAULT_CONFIG();
+    server->httpd_config.max_uri_handlers = MAX_NUMBER_OF_URI_HANDLERS;
     server->httpd_config.server_port = server->config->port; // Set the server port
     server->httpd_config.max_open_sockets = server->config->max_connections + RESERVED_SOCKETS; // Reserve 3 sockets for internal use
     server->httpd_config.uri_match_fn = httpd_uri_match_wildcard;
@@ -199,7 +227,21 @@ error_type_t webserver_start(webserver_t* server){
         ESP_LOGE(TAG, "Failed to start HTTP server: %s", esp_err_to_name(ret));
         return SYSTEM_OPERATION_FAILED; // Handle HTTP server start failure
     }
-
+    //****** Leaving this code here, we may need it soon */
+    //Register the OPTIONS handler for CORS support
+    static httpd_uri_t options_uri = {
+        .uri = "/*", // Match all URIs
+        .method = HTTP_OPTIONS,
+        .handler = cors_preflight_handler,
+        .user_ctx = NULL
+    };
+    ret = httpd_register_uri_handler(server->server, &options_uri);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to register OPTIONS handler: %s", esp_err_to_name(ret));
+        httpd_stop(server->server); // Stop the server if registration fails
+        return SYSTEM_OPERATION_FAILED; // Handle OPTIONS handler registration failure
+    }
+    ESP_LOGI(TAG, "OPTIONS handler registered successfully");
     server->status = WEBSERVER_RUNNING; // Set the status to running
     ESP_LOGI(TAG, "Web server started successfully");
     return SYSTEM_OK;
@@ -258,7 +300,11 @@ error_type_t webserver_deinit(webserver_t* server){
         free(server->rest_context); // Free the REST server context
         server->rest_context = NULL; // Set pointer to NULL after freeing
     }
-
+    if(credential_store_deinit() != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to deinitialize NVS partition");
+        return SYSTEM_OPERATION_FAILED; // Handle NVS deinitialization failure
+    }
+    ESP_LOGI(TAG, "secure deinitialized successfully");
     if(de_init_fs(server->config->web_partition_label) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to deinitialize file system");
         return SYSTEM_OPERATION_FAILED; // Handle file system deinitialization failure
@@ -307,3 +353,44 @@ error_type_t webserver_remove_route(webserver_t* server,const char* uri,httpd_me
     ESP_LOGI(TAG, "Route removed successfully: %s", uri);
     return SYSTEM_OK;
 }
+
+error_type_t webserver_get_scratch_buffer(webserver_t* server, char** buffer, size_t* size){
+    if (server == NULL || server->rest_context == NULL || buffer == NULL || size == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null parameters
+    }
+    if (server->status != WEBSERVER_RUNNING) {
+        return SYSTEM_INVALID_STATE; // Web server is not running
+    }
+
+    *buffer = server->rest_context->scratch;
+    *size = SCRATCH_BUFSIZE; // Set the size of the scratch buffer
+    ESP_LOGI(TAG, "Scratch buffer retrieved successfully");
+    return SYSTEM_OK;
+}
+
+error_type_t webserver_get_context(webserver_t* server, rest_server_context_t** context_ptr){
+    if (server == NULL || server->rest_context == NULL || context_ptr == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null parameters
+    }
+    if (server->status != WEBSERVER_RUNNING) {
+        return SYSTEM_INVALID_STATE; // Web server is not running
+    }
+
+    *context_ptr = server->rest_context;
+    ESP_LOGI(TAG, "context buffer retrieved successfully");
+    return SYSTEM_OK;  
+}
+
+static esp_err_t cors_preflight_handler(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type, Authorization");
+    // If you want to allow cookies/auth:
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Credentials", "true");
+    // No body for OPTIONS
+    httpd_resp_set_status(req, "204 No Content");
+    return httpd_resp_send(req, NULL, 0);
+}
+
+
+

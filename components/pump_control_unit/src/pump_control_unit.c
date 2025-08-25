@@ -176,7 +176,7 @@ error_type_t pump_control_unit_add_pump_monitor(pump_control_unit_t *manager, pu
     }
     // Add the pump monitor to the map
     pump_monitor_config_t config;
-    error_type_t err = pump_monitor_get_config(pump_monitor, &config);
+    error_type_t err = pump_monitorGetConfig(pump_monitor, &config);
     if (err != SYSTEM_OK) {
         return err; // Handle error in getting pump monitor configuration
     }

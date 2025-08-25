@@ -82,3 +82,24 @@ error_type_t current_sensor_get_current_in_amp(const current_sensor_t *sensor, f
     
     return SYSTEM_OK;
 }
+
+
+current_sensor_interface_t string_to_current_sensor_interface(const char* interface_str){
+    if (strcmp(interface_str, "I2C") == 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_I2C;
+    }else if (strcmp(interface_str, "SPI") == 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_SPI;
+    }else if (strcmp(interface_str, "PWM") == 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_PWM;
+    }else if (strcmp(interface_str, "ANALOG_VOLTAGE")== 0)
+    {
+        return CURRENT_SENSOR_INTERFACE_ANALOG_VOLTAGE;
+    }else
+    {
+        printf("Uknown");
+        return CURRENT_SENSOR_INTERFACE_I2C;
+    }
+}   

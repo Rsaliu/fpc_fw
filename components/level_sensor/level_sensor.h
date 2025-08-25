@@ -26,4 +26,6 @@ error_type_t level_sensor_read(level_sensor_t* level_sensor_obj, uint16_t* read_
 error_type_t level_sensor_destroy(level_sensor_t** level_sensor_obj);
 error_type_t level_sensor_deinit(level_sensor_t* level_sensor_obj);
 
+level_sensor_interface_t string_to_level_sensor_interface(const char* interface_str);
+level_sensor_protocol_t string_to_level_sensor_protocol(const char* protocol_str);
 #endif

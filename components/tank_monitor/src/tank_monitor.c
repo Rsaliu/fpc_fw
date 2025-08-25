@@ -134,8 +134,8 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
     }
 
     // Simulate checking the level sensor
-    int current_level;
-    error_type_t err = level_sensor_get_level_in_mm(monitor->config->sensor, &current_level);
+    uint16_t current_level;
+    error_type_t err = level_sensor_read(monitor->config->sensor, &current_level);
     if(err != SYSTEM_OK) {
         return err; // Handle error in getting level from sensor
     }

@@ -1,5 +1,7 @@
 #include "unity.h"
 #include <tank_monitor.h>
+#include <level_sensor.h>
+#include <rs485.h>
 #include <string.h>
 #include <stdio.h>
 #include "esp_log.h"
@@ -33,9 +35,14 @@ void tankMonitorSetUp(void) {
     // Set up code before each test
     tank_monitor_config_t config;
     config.tank = tank_create((tank_config_t){1, 1000.0, TANK_SHAPE_RECTANGLE, 100.0, 90, 10});
-    config.sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
+    //config.sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
+    rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
+    rs485_t* rs485 = rs485_create(&rs485_config);
+    level_sensor_config_t sensor_config = {4,0x01,rs485, LEVEL_SENSOR_INTERFACE_RS485, GL_A01_PROTOCOL};
+    level_sensor_t* level_Sensor = level_sensor_create(&sensor_config);
+    config.sensor = level_Sensor;
     config.id = 1; // Example monitor ID
-    config.sensor->id = 1; // Example sensor ID
+    //config.sensor->id = 1; // Example sensor ID
     monitor = tank_monitor_create(config);
 }
 

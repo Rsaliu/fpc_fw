@@ -35,4 +35,5 @@ error_type_t tank_print_info_to_buffer(tank_t *tank, char* buffer, const size_t 
 
 // Function prototypes
 const char* shape_to_string(tank_shape_t shape);
+tank_shape_t string_to_tank_shape(const char* shape_str);
 #endif // TANK_P
