@@ -14,7 +14,7 @@ void tank_monitor_task(void* pvParameter){
       exit(1);
    }
    
-   printf("entering the task monitor loop......\n");
+   ESP_LOGI(TAG,"entering the task monitor loop......\n");
    while (1)
    {
         for (int i = 0; i <config->tank_monitor_count; i++)
@@ -22,10 +22,10 @@ void tank_monitor_task(void* pvParameter){
             if (config->tank_monitor[i] == NULL) {
                 ESP_LOGW(TAG, "Monitor[%d] is NULL", i);
             }
-            printf("number of monitor[%d]\n", i);
+            ESP_LOGI(TAG, "number of monitor[%d]\n", i);
            tank_monitor_check_level(config->tank_monitor[i]);          
       }
-      vTaskDelay(pdMS_TO_TICKS(500));  
+      vTaskDelay(pdMS_TO_TICKS(1000));  
   }
 
 }
