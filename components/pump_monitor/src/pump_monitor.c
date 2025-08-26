@@ -4,6 +4,7 @@
 #include <string.h>
 #include "esp_log.h"
 #include "pump_monitor.h"
+#include <event.h>
 
 static const char *TAG = "pump_monitor";
 
@@ -155,7 +156,8 @@ error_type_t pump_monitor_check_current(pump_monitor_t *pump_monitor)
 
     // Simulate checking the current sensor
     float current_amp_reading;
-    error_type_t err = current_sensor_get_current(pump_monitor->config->sensor, &current_amp_reading);
+  
+    error_type_t err = current_sensor_get_current_in_amp(pump_monitor->config->sensor, &current_amp_reading);
 
     if (err != SYSTEM_OK)
     {
@@ -241,7 +243,7 @@ error_type_t pump_monitor_subscribe_event(pump_monitor_t *pump_monitor, const pu
     //  Check if the pump_monitor is initialized
     if (pump_monitor->state != PUMP_MONITOR_INITIALIZED)
     {
-        // printf("Pump monitor is not initialized\n");
+      
         ESP_LOGE(TAG, "Pump monitor is not initialized");
         return SYSTEM_INVALID_STATE; // pump_monitor is not initialized
     }
