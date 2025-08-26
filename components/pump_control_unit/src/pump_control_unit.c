@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "esp_log.h"
 #define  PUMP_CONTROL_UNIT_MAX_TANK_MONITORS  10 // Maximum number of tank monitors
 #define PUMP_CONTROL_UNIT_MAX_PUMP_MONITORS PUMP_CONTROL_UNIT_MAX_TANK_MONITORS // For compatibility with existing code
 #define PUMP_CONTROL_UNIT_MAX_RELAY_COUNT PUMP_CONTROL_UNIT_MAX_PUMP_MONITORS // Maximum number of relays
@@ -13,6 +14,8 @@ typedef struct{
     int monitor_id; // Unique identifier for the monitor
     int relay_id; // Unique identifier for the relay
 }monitor_relay_group_t;
+
+static const char*TAG = "PUMP_CONTROL_UNIT";
 
 //dummy pump_monitor_get_config function
 error_type_t pump_monitor_get_config(pump_monitor_t *monitor, pump_monitor_config_t *config) {
@@ -43,7 +46,7 @@ static monitor_relay_group_t * get_group_from_tank_monitor_event_map(HashMap* ma
     if (tank_monitor_id < 0 || relay_id < 0) {
         return NULL; // Handle invalid IDs
     }
-    printf("Searching for group with tank monitor ID: %d and relay ID: %d\n", tank_monitor_id, relay_id);
+    ESP_LOGI(TAG,"Searching for group with tank monitor ID: %d and relay ID: %d", tank_monitor_id, relay_id);
     // Iterate through the map to find the event ID associated with the tank monitor ID and relay ID
     MapIterator it = emhashmap_iterator(map);
     MapEntry* entry = emhashmap_iterator_next(&it);
@@ -51,7 +54,7 @@ static monitor_relay_group_t * get_group_from_tank_monitor_event_map(HashMap* ma
         monitor_relay_group_t *group = (monitor_relay_group_t *)entry->value;
         if (group->monitor_id == tank_monitor_id && group->relay_id == relay_id) {
             *event_id = entry->key; // Set the event ID
-            printf("Found group for tank monitor ID: %d, relay ID: %d, event ID: %d\n", tank_monitor_id, relay_id, *event_id);
+            ESP_LOGI(TAG,"Found group for tank monitor ID: %d, relay ID: %d, event ID: %d", tank_monitor_id, relay_id, *event_id);
             return entry->value; // Return the group if found
         }
         entry = emhashmap_iterator_next(&it); // Move to the next entry
@@ -139,8 +142,8 @@ error_type_t pump_control_unit_add_tank_monitor(pump_control_unit_t *manager, ta
     if(emhashmap_contains(&manager->tank_monitors_map, config.id)) {
         return SYSTEM_INVALID_PARAMETER; // Tank monitor with this ID already exists
     }
-    printf("Adding tank monitor with ID: %d to the pump control unit\n", config.id);
-    printf("Tank monitor pointer value: %p\n", tank_monitor);
+    ESP_LOGI(TAG,"Adding tank monitor with ID: %d to the pump control unit", config.id);
+    ESP_LOGI(TAG,"Tank monitor pointer value: %p", tank_monitor);
     if (!emhashmap_put(&manager->tank_monitors_map, config.id, (void*)tank_monitor)){
         return SYSTEM_BUFFER_OVERFLOW; // Handle error in adding to the map
     }
@@ -262,11 +265,11 @@ error_type_t pump_control_add_relay_to_tank_monitor(pump_control_unit_t *manager
     if(!manager->is_initialized) {
         return SYSTEM_INVALID_STATE; // Manager is not initialized
     }
-    printf("Adding relay ID: %d to tank monitor ID: %d after confirming init state\n", relay_id, tank_monitor_id);
+    ESP_LOGI(TAG,"Adding relay ID: %d to tank monitor ID: %d after confirming init state", relay_id, tank_monitor_id);
     if(!emhashmap_contains(&manager->tank_monitors_map, tank_monitor_id)) {
         return SYSTEM_INVALID_PARAMETER; // Tank monitor not found
     }
-    printf("Tank monitor ID: %d found, proceeding to add relay ID: %d\n", tank_monitor_id, relay_id);
+    ESP_LOGI(TAG,"Tank monitor ID: %d found, proceeding to add relay ID: %d", tank_monitor_id, relay_id);
     tank_monitor_event_hook_t hook = {
         .context = manager, // Set the context to the pump control unit manager
         .actuator_id = relay_id, // Set the actuator ID to the relay ID
@@ -283,7 +286,7 @@ error_type_t pump_control_add_relay_to_tank_monitor(pump_control_unit_t *manager
     if (err != SYSTEM_OK) {
         return err; // Handle error in subscribing to the event
     }
-    printf("Subscribed to tank monitor ID: %d with event ID: %d\n", tank_monitor_id, event_id);
+    ESP_LOGI(TAG,"Subscribed to tank monitor ID: %d with event ID: %d", tank_monitor_id, event_id);
     
     // Create a monitor_relay_group to store the association
     monitor_relay_group_t* group = (monitor_relay_group_t*)malloc(sizeof(monitor_relay_group_t));
@@ -298,7 +301,7 @@ error_type_t pump_control_add_relay_to_tank_monitor(pump_control_unit_t *manager
     if (!emhashmap_put(&manager->tank_monitor_event_map, event_id, (void*)group)) {
         return SYSTEM_BUFFER_OVERFLOW; // Handle error in adding to the map
     }
-    printf("Added relay ID: %d to tank monitor ID: %d with event ID: %d\n", relay_id, tank_monitor_id, event_id);
+    ESP_LOGI(TAG,"Added relay ID: %d to tank monitor ID: %d with event ID: %d", relay_id, tank_monitor_id, event_id);
 
     return SYSTEM_OK;
 }
@@ -312,16 +315,16 @@ error_type_t pump_control_unit_remove_relay_from_tank_monitor(pump_control_unit_
     if(!manager->is_initialized) {
         return SYSTEM_INVALID_STATE; // Manager is not initialized
     }
-    printf("Removing relay ID: %d from tank monitor ID: %d after confirming init state\n", relay_id, tank_monitor_id);
+    ESP_LOGI(TAG,"Removing relay ID: %d from tank monitor ID: %d after confirming init state", relay_id, tank_monitor_id);
     if(!emhashmap_contains(&manager->tank_monitors_map, tank_monitor_id)) {
         return SYSTEM_INVALID_PARAMETER; // Tank monitor not found
     }
-    printf("Tank monitor ID: %d found, proceeding to remove relay ID: %d\n", tank_monitor_id, relay_id);
+    ESP_LOGI(TAG,"Tank monitor ID: %d found, proceeding to remove relay ID: %d", tank_monitor_id, relay_id);
     monitor_relay_group_t * grp;
     int event_id = -1; // Initialize event_id to -1
     grp = get_group_from_tank_monitor_event_map(&manager->tank_monitor_event_map, tank_monitor_id, relay_id,&event_id);
     if (grp == NULL || event_id < 0) {
-        printf("Failed to find group for tank monitor ID: %d, relay ID: %d\n", tank_monitor_id, relay_id);
+        ESP_LOGE(TAG,"Failed to find group for tank monitor ID: %d, relay ID: %d", tank_monitor_id, relay_id);
         return SYSTEM_INVALID_PARAMETER; // Event not found for the given tank monitor and relay ID
     }
     MapEntry* map_entry = emhashmap_get(&manager->tank_monitors_map, tank_monitor_id);
@@ -404,7 +407,7 @@ error_type_t pump_control_unit_remove_relay_from_tank_monitor(pump_control_unit_
 //     int event_id = -1; // Initialize event_id to -1
 //     grp = get_group_from_tank_monitor_event_map(&manager->pump_monitor_event_map, pump_monitor_id, relay_id,&event_id);
 //     if (grp == NULL || event_id < 0) {
-//         printf("Failed to find group for pump monitor ID: %d, relay ID: %d\n", pump_monitor_id, relay_id);
+//         ESP_LOGE(TAG,"Failed to find group for pump monitor ID: %d, relay ID: %d", pump_monitor_id, relay_id);
 //         return SYSTEM_INVALID_PARAMETER; // Event not found for the given pump monitor and relay ID
 //     }
 
@@ -426,22 +429,22 @@ error_type_t pump_control_unit_remove_relay_from_tank_monitor(pump_control_unit_
 
 void callback_handler(void* context,int actuator_id, event_type_t state,int monitor_id){
     // Example callback function for tank monitor events
-    printf("Tank state changed to: %d for monitor ID: %d\n", state, monitor_id);
+    ESP_LOGI(TAG,"Tank state changed to: %d for monitor ID: %d", state, monitor_id);
     relay_t *relay = NULL;
     error_type_t err = pump_control_unit_get_relay_by_id((pump_control_unit_t *)context, actuator_id, &relay); 
     if (err != SYSTEM_OK || relay == NULL) {
-        printf("Failed to get relay for actuator ID: %d\n", actuator_id);
+        ESP_LOGE(TAG,"Failed to get relay for actuator ID: %d", actuator_id);
         return; // Handle error in getting relay
     }
     // Here you can control the relay based on the state
     if (state == EVENT_TANK_FULL_STATE) {
-        printf("Turning on relay for actuator ID: %d\n", actuator_id);
+        ESP_LOGI(TAG,"Turning on relay for actuator ID: %d", actuator_id);
         // Code to turn on the relay
     } else if (state == EVENT_TANK_LOW_STATE) {
-        printf("Turning off relay for actuator ID: %d\n", actuator_id);
+        ESP_LOGI(TAG,"Turning off relay for actuator ID: %d", actuator_id);
         // Code to turn off the relay
     } else {
-        printf("No action for state: %d\n", state);
+        ESP_LOGI(TAG,"No action for state: %d", state);
     }
 
 }

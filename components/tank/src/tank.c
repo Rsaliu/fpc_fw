@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "esp_log.h"
 typedef struct tank_t {
     tank_config_t *config; // Pointer to the tank configuration
     tank_state_t state; // State of the tank
 } tank_t;
 
+static const char* TAG = "TANK";
 
 tank_t* tank_create(tank_config_t config){
     tank_t *tank = (tank_t *)malloc(sizeof(tank_t));
@@ -40,7 +42,7 @@ error_type_t tank_init(tank_t *tank){
     }
 
     tank->state = TANK_INITIALIZED;
-    printf("Tank initialized with ID: %d, Capacity: %.2f liters, Shape: %d\n",
+    ESP_LOGI(TAG,"Tank initialized with ID: %d, Capacity: %.2f liters, Shape: %d\n",
            tank->config->id, tank->config->capacity_in_liters, tank->config->shape);
 
     return SYSTEM_OK;
@@ -56,7 +58,7 @@ error_type_t tank_deinit(tank_t *tank){
 
     // Deinitialize the tank (if any specific actions are needed)
     tank->state = TANK_NOT_INITIALIZED;
-    printf("Tank deinitialized\n");
+    ESP_LOGI(TAG,"Tank deinitialized\n");
 
     return SYSTEM_OK;
 }
@@ -71,7 +73,7 @@ error_type_t tank_destroy(tank_t **tank){
     // Free the allocated memory for the tank
     free(*tank);
     *tank = NULL; // Set the pointer to NULL after freeing
-    printf("Tank destroyed\n");
+    ESP_LOGI(TAG,"Tank destroyed\n");
 
     return SYSTEM_OK;
 }
@@ -92,7 +94,7 @@ error_type_t tank_get_state(const tank_t *tank, tank_state_t *state){
     }
     
     *state = tank->state; // Get the current state of the tank
-    printf("Tank state retrieved: %d\n", *state);
+    ESP_LOGI(TAG,"Tank state retrieved: %d\n", *state);
     
     return SYSTEM_OK;
 }
@@ -107,12 +109,12 @@ const char* shape_to_string(tank_shape_t shape) {
 
 // Print all tank details
 error_type_t tank_print_info(tank_t *tank) {
-printf("ID: %d\n", tank->config->id);
-printf("Capacity:%.2f\n",tank->config->capacity_in_liters);
-printf("Height:%.2f\n",tank->config->height_in_cm);
-printf("Full level: %d\n", tank->config->full_level_in_mm);
-printf("Low level: %d\n", tank->config->low_level_in_mm);
-printf("Shape: %s\n", shape_to_string(tank->config->shape));
+ESP_LOGI(TAG,"ID: %d\n", tank->config->id);
+ESP_LOGI(TAG,"Capacity:%.2f\n",tank->config->capacity_in_liters);
+ESP_LOGI(TAG,"Height:%.2f\n",tank->config->height_in_cm);
+ESP_LOGI(TAG,"Full level: %d\n", tank->config->full_level_in_mm);
+ESP_LOGI(TAG,"Low level: %d\n", tank->config->low_level_in_mm);
+ESP_LOGI(TAG,"Shape: %s\n", shape_to_string(tank->config->shape));
     return SYSTEM_OK; // Assuming you define ERROR_NONE in your enum
 }
 error_type_t tank_print_info_to_buffer(tank_t *tank, char* buffer, const size_t buffer_size){
