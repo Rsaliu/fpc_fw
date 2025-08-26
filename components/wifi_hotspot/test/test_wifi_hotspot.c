@@ -129,7 +129,7 @@ TEST_CASE("wifi_hotspot_test", "test_wifi_hotspot_on")
     result = wifi_hotspot_on(hotspot);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
    
-    vTaskDelay(60000 / portTICK_PERIOD_MS); 
+    //vTaskDelay(60000 / portTICK_PERIOD_MS); 
 
     wifiHotspotTearDown();
     ESP_LOGI(TAG, "Test test_wifi_hotspot_on completed");

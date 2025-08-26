@@ -12,6 +12,12 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include <register_handler.h>
+#include <login_handler.h>
+#include <config_handler.h>
+#include <logout_handler.h>
+#include <reset_handler.h>
+#include <web_server_setup.h>
 
 const char * WEBSERVER_TEST_TAG = "WEBSERVER_TEST";
 
@@ -20,11 +26,12 @@ webserver_t* webserver = NULL;
 webserver_config_t webserver_config = {
     .port = 80, // Port number for the web server
     .max_connections = 4, // Maximum number of concurrent connections
-    .mdns_instance = "ESP32-WebServer", // MDNS instance name
-    .mdns_hostname = "esp32-webserver", // MDNS hostname
+    .mdns_instance = "FPC-WebServer", // MDNS instance name
+    .mdns_hostname = "fpc-webserver", // MDNS hostname
     .base_path = "/spiffs", // Base path for the web server
-    .web_mount_point = "/web", // Web mount point for serving files
-    .web_partition_label = "spiffs" // Partition label for the web server
+    .web_mount_point = "/spiffs", // Web mount point for serving files
+    .web_partition_label = "spiffs", // Partition label for the web server
+    .config_file_path = "config.json" // Path to the configuration file
 };
 
 void webserverSetUp(void) {
@@ -208,18 +215,12 @@ TEST_CASE("webserver_test", "test_webserver_add_dummy_route") {
     //start the web server before adding routes
     result = webserver_start(webserver);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    httpd_uri_t uri = {
-        .uri = "/dummy",
-        .method = HTTP_GET,
-        .handler = dummy_handler,
-        .user_ctx = "Test Context"
-    };
-
-    result = webserver_add_route(webserver, &uri);
+    rest_server_context_t *context_ptr = NULL;
+    result = webserver_get_context(webserver, &context_ptr);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-
-    webserverTearDown();
+    result = setup_web_handlers(webserver,context_ptr);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    //webserverTearDown();
 }
 
 //dummy test to switch off wifi-ap hotspot
