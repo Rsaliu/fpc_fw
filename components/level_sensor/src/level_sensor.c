@@ -101,10 +101,10 @@ error_type_t level_sensor_read(level_sensor_t *level_sensor_obj, uint16_t* read_
     return SYSTEM_OK;
 }
 
-error_type_t level_sensor_deinit(level_sensor_t *level_sensor_obj)
-{
-    if (level_sensor_obj == NULL)
-        return SYSTEM_NULL_PARAMETER;
+
+
+error_type_t level_sensor_deinit(level_sensor_t* level_sensor_obj){
+    if (level_sensor_obj == NULL)return SYSTEM_NULL_PARAMETER;
     level_sensor_obj->activate = false;
     return SYSTEM_OK;
 }
@@ -123,3 +123,33 @@ error_type_t level_sensor_destroy(level_sensor_t **level_sensor_obj)
 
     return SYSTEM_OK;
 }
+
+level_sensor_interface_t string_to_level_sensor_interface(const char* interface_str){
+    if (strcmp(interface_str, "RS485") == 0)
+    {
+        return LEVEL_SENSOR_INTERFACE_RS485;
+    }else if (strcmp(interface_str, "UART") == 0)
+    {
+        return LEVEL_SENSOR_INTERFACE_UART;
+    }else if (strcmp(interface_str, "PWM") == 0)
+    {
+        return LEVEL_SENSOR_INTERFACE_PWM;
+    }else
+    {
+        return LEVEL_SENSOR_INTERFACE_RS485;
+    }
+       
+}
+
+level_sensor_protocol_t string_to_level_sensor_protocol(const char* protocol_str){
+    if (strcmp(protocol_str, "GL_A01_PROTOCOL") == 0)
+    {
+        return GL_A01_PROTOCOL;
+    }else
+    {
+        printf("Unknow\n");
+        return GL_A01_PROTOCOL;
+    }
+}
+
+

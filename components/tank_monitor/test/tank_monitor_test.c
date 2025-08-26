@@ -1,8 +1,11 @@
 #include "unity.h"
 #include <tank_monitor.h>
+#include <level_sensor.h>
+#include <rs485.h>
 #include <string.h>
 #include <stdio.h>
 #include "esp_log.h"
+#include <protocol.h>
 
 tank_monitor_t *monitor = NULL;
 static const char* TAG = "TANK_MONITOR";
@@ -22,20 +25,38 @@ void test_callback(void* context,int actuator_id, event_type_t event,int monitor
     }
 }
 
-
-tank_monitor_event_hook_t test_hook = {
+ tank_monitor_event_hook_t test_hook = {
     .context = NULL, // No context needed for this test
     .actuator_id = 1, // Example actuator ID
     .callback = test_callback // Assign the test callback function
 };
 
+//comment the dummy_context_send_receive when using the real level sensor
+static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff,int send_buff_size,
+    uint8_t *receive_buff,int *receive_buff_size)
+{
+    uint8_t valid_resp[] = { 0x01, 0x03, 0x02, 0x02, 0xF2, 0x38, 0xA1};
+    memcpy(receive_buff, valid_resp, sizeof(valid_resp));
+    *receive_buff_size = sizeof(valid_resp);
+    return SYSTEM_OK;
+}
 void tankMonitorSetUp(void) {
     // Set up code before each test
     tank_monitor_config_t config;
     config.tank = tank_create((tank_config_t){1, 1000.0, TANK_SHAPE_RECTANGLE, 100.0, 90, 10});
-    config.sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
+    //config.sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
+    rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
+    rs485_t* rs485_obj = rs485_create(&rs485_config);
+    protocol_callback_t protocol = protocol_gl_a01_read_level;
+    send_receive_t send_receive =  dummy_context_Send_receive; //replace with the real context_send_receive
+    protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
+    level_sensor_config_t sensor_config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
+                                       .send_recive = send_receive,
+                                       .interpreter = interpret,
+                                    LEVEL_SENSOR_INTERFACE_RS485, GL_A01_PROTOCOL };
+    level_sensor_t* level_Sensor = level_sensor_create(sensor_config);
+    config.sensor = level_Sensor;
     config.id = 1; // Example monitor ID
-    config.sensor->id = 1; // Example sensor ID
     monitor = tank_monitor_create(config);
 }
 
