@@ -9,6 +9,18 @@ typedef error_type_t (*protocol_callback_t)( uint8_t slave_addr, uint8_t* buffer
 typedef error_type_t(*send_receive_t)(void* context, uint8_t* send_buff, int send_buff_size, uint8_t* receive_buff, int* receive_buff_size);
 typedef error_type_t(*protocol_interpreter_t)(uint8_t* buffer, int buff_size, uint16_t* sensor_data);
  
+typedef enum {
+    LEVEL_SENSOR_INTERFACE_RS485,
+    LEVEL_SENSOR_INTERFACE_UART,
+    LEVEL_SENSOR_INTERFACE_PWM
+
+}level_sensor_interface_t;
+
+typedef enum {
+    GL_A01_PROTOCOL
+
+}level_sensor_protocol_t;
+
 typedef struct 
 {
     int id;   
@@ -21,17 +33,7 @@ typedef struct
     level_sensor_protocol_t level_sensor_protocol;
 }level_sensor_config_t;
 
-typedef enum {
-    LEVEL_SENSOR_INTERFACE_RS485,
-    LEVEL_SENSOR_INTERFACE_UART,
-    LEVEL_SENSOR_INTERFACE_PWM
 
-}level_sensor_interface_t;
-
-typedef enum {
-    GL_A01_PROTOCOL
-
-}level_sensor_protocol_t;
 
 
 

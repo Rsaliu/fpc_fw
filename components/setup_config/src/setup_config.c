@@ -131,7 +131,7 @@ error_type_t tank_monitor_setup_config(cJSON *tank_monitor_json)
     level_sensor_config_t level_sensor_config = {
         .id = level_sensor_id,
     };
-    level_sensor_t *level_sensor = level_sensor_create(&level_sensor_config);
+    level_sensor_t *level_sensor = level_sensor_create(level_sensor_config);
 
     int tank_id = cJSON_GetObjectItem(tank_monitor, "tank_id")->valueint;
     tank_config_t tank_config = {
@@ -263,7 +263,7 @@ error_type_t level_sensor_setup_config(cJSON *level_sensor_json)
         .level_sensor_protocol = GL_A01_PROTOCOL,
     };
 
-    level_sensor_t *level_sensor_obj = level_sensor_create(&level_sensor_config);
+    level_sensor_t *level_sensor_obj = level_sensor_create(level_sensor_config);
     if (level_sensor_obj == NULL)
     {
         return SYSTEM_NULL_PARAMETER;

@@ -6,10 +6,13 @@
 #include <rs485.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <protocol.h>
 #include "esp_log.h"
+#include <stdlib.h>
+#include <string.h>
 
 pump_control_unit_t *pump_control_unit = NULL;
-static const char* TAG = "PUMP_CONTROL_UNIT";
+static const char* PUMP_CTRL_TAG = "PUMP_CONTROL_UNIT";
 
 void pumpControlUnitSetUp(void) {
     // Set up code before each test
@@ -199,7 +202,14 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_get_relay_by_invalid
     
     pumpControlUnitTearDown();
 }
-
+static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff,int send_buff_size,
+    uint8_t *receive_buff,int *receive_buff_size)
+{
+    uint8_t valid_resp[] = { 0x01, 0x03, 0x02, 0x02, 0xF2, 0x38, 0xA1};
+    memcpy(receive_buff, valid_resp, sizeof(valid_resp));
+    *receive_buff_size = sizeof(valid_resp);
+    return SYSTEM_OK;
+}
 // full end to end test
 TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
     pumpControlUnitSetUp();
@@ -216,10 +226,15 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
     };
 
     rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
-    rs485_t* rs485 = rs485_create(&rs485_config);
-    level_sensor_config_t level_sensor_config = {4,0x01,rs485, LEVEL_SENSOR_INTERFACE_RS485, GL_A01_PROTOCOL};
-    //level_sensor_t *level_sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
-    level_sensor_t* level_Sensor = level_sensor_create(&level_sensor_config);
+    rs485_t* rs485_obj = rs485_create(&rs485_config);
+    protocol_callback_t protocol = protocol_gl_a01_read_level;
+    send_receive_t send_receive =  dummy_context_Send_receive;
+    protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
+    level_sensor_config_t sensor_config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
+                                       .send_recive = send_receive,
+                                       .interpreter = interpret,
+                                    LEVEL_SENSOR_INTERFACE_RS485, GL_A01_PROTOCOL };
+    level_sensor_t* level_Sensor = level_sensor_create(sensor_config);
     TEST_ASSERT_NOT_NULL(level_Sensor);
     tank_t* my_tank = tank_create(tank_config);
     // Add a tank monitor
@@ -276,11 +291,11 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
     result = tank_monitor_get_state(tank_monitor, &tank_monitor_state);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_EQUAL(TANK_MONITOR_INITIALIZED, tank_monitor_state);
-    ESP_LOGI(TAG,"Tank monitor state is initialized");
+    ESP_LOGI(PUMP_CTRL_TAG,"Tank monitor state is initialized");
     // Add the relay to the tank monitor
     result = pump_control_add_relay_to_tank_monitor(pump_control_unit, 1, 1);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
-    ESP_LOGI(TAG,"Relay added to tank monitor successfully");
+    ESP_LOGI(PUMP_CTRL_TAG,"Relay added to tank monitor successfully");
     // Remove the relay from the tank monitor
     result = pump_control_unit_remove_relay_from_tank_monitor(pump_control_unit, 1, 1);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
