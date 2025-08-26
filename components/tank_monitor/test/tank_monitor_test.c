@@ -25,12 +25,13 @@ void test_callback(void* context,int actuator_id, event_type_t event,int monitor
     }
 }
 
-
-tank_monitor_event_hook_t test_hook = {
+ tank_monitor_event_hook_t test_hook = {
     .context = NULL, // No context needed for this test
     .actuator_id = 1, // Example actuator ID
     .callback = test_callback // Assign the test callback function
 };
+
+//comment the dummy_context_send_receive when using the real level sensor
 static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff,int send_buff_size,
     uint8_t *receive_buff,int *receive_buff_size)
 {
@@ -47,7 +48,7 @@ void tankMonitorSetUp(void) {
     rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
     rs485_t* rs485_obj = rs485_create(&rs485_config);
     protocol_callback_t protocol = protocol_gl_a01_read_level;
-    send_receive_t send_receive =  dummy_context_Send_receive;
+    send_receive_t send_receive =  dummy_context_Send_receive; //replace with the real context_send_receive
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
     level_sensor_config_t sensor_config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
                                        .send_recive = send_receive,

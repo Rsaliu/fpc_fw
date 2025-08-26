@@ -202,6 +202,7 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_get_relay_by_invalid
     
     pumpControlUnitTearDown();
 }
+//comment the dummy_context_send_receive when using the real level sensor
 static error_type_t dummy_context_Send_receive(void *context, uint8_t *send_buff,int send_buff_size,
     uint8_t *receive_buff,int *receive_buff_size)
 {
@@ -228,7 +229,7 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
     rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
     rs485_t* rs485_obj = rs485_create(&rs485_config);
     protocol_callback_t protocol = protocol_gl_a01_read_level;
-    send_receive_t send_receive =  dummy_context_Send_receive;
+    send_receive_t send_receive =  dummy_context_Send_receive; //replace with the real context_send_receive
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
     level_sensor_config_t sensor_config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
                                        .send_recive = send_receive,

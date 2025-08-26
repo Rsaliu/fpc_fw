@@ -93,9 +93,15 @@ TEST_CASE("level_sensor_test", "test_level_sensor_destroy"){
     TEST_ASSERT_NULL(level_Sensor);
 }
  
-// on comment when  you are using it with the level sensor Hardware  
+//  uncomment when  you are using it with the level sensor Hardware  
 
 // void real_level_sensor_setup(void){
+//     rs485_config_t rs485_config = {2,17,16,4,9600};
+//     rs485_obj = rs485_create(&rs485_config);
+//     error_type_t err = rs485_init(rs485_obj);
+//     if (err != SYSTEM_OK) {
+//         ESP_LOGE(TAG,"RS485 init failed");
+//     }
 //     protocol_callback_t protocol = protocol_gl_a01_read_level;
 //     send_receive_t send_receive =  rs485_context_send_receive;
 //     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
