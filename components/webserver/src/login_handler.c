@@ -49,7 +49,6 @@ esp_err_t login_handler(httpd_req_t *req){
         cJSON_Delete(root);
         return ESP_FAIL; // Handle null username or password
     }
-    ESP_LOGI(LOGIN_HANDLER_TAG, "username: %s and %s password", username,password);
 
     if (!auth_store_check(username, password)) {
         httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED,
