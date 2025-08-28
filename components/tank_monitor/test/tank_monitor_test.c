@@ -52,8 +52,7 @@ void tankMonitorSetUp(void) {
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
     level_sensor_config_t sensor_config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
                                        .send_recive = send_receive,
-                                       .interpreter = interpret,
-                                    LEVEL_SENSOR_INTERFACE_RS485, GL_A01_PROTOCOL };
+                                       .interpreter = interpret };
     level_sensor_t* level_Sensor = level_sensor_create(sensor_config);
     config.sensor = level_Sensor;
     config.id = 1; // Example monitor ID
