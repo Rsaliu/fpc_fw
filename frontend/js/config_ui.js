@@ -58,7 +58,6 @@ function saveConfig() {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
-      // Add authentication header if required, e.g., "Authorization": "Bearer " + localStorage.getItem("token")
     },
     credentials: "include", 
     body: JSON.stringify(configData)
@@ -85,3 +84,4 @@ function saveConfig() {
     document.getElementById("status").textContent = `Error saving configuration: ${error.message}`;
   });
 }
+

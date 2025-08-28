@@ -1,35 +1,43 @@
-let isLoggedIn = localStorage.getItem("isLoggedIn");
-
 function redirectTo(page) {
-  if (page === 'config_ui.html' && !isLoggedIn) {
-    alert("Please log in to access configuration.");
-    return;
-  }
+
   window.location.href = page;
 }
 
+function logout() {
+  localStorage.removeItem("isLoggedIn");
+  window.location.href = "home_ui.html";
+}
+
 function updateUI() {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+
   const loginTabLink = document.getElementById("loginTabLink");
   const registerTabLink = document.getElementById("registerTabLink");
   const configTabLink = document.getElementById("configTabLink");
-  const resetTabLink = document.getElementById("resetTabLink");
+  const logoutTabLink = document.getElementById("logoutTabLink");
+  const homeTabLink = document.getElementById("homeTabLink");
+
+
 
   if (isLoggedIn) {
     loginTabLink.style.display = "none";
     registerTabLink.style.display = "none";
     configTabLink.style.display = "inline-block";
-    //resetTabLink.style.display = "inline-block";
-    configTabLink.disabled = false;
-    // resetTabLink.disabled = false;
+    homeTabLink.style.display = "inline-block";
+    logoutTabLink.style.display = "inline-block";
+
+
   } else {
     loginTabLink.style.display = "inline-block";
     registerTabLink.style.display = "inline-block";
     configTabLink.style.display = "none";
-    //resetTabLink.style.display = "none";
-    loginTabLink.textContent = "Login";
-    loginTabLink.onclick = () => redirectTo('login_ui.html');
+    logoutTabLink.style.display = "none";
+    homeTabLink.style.display = "none";
+
   }
 }
 
 // Initialize the UI
 document.addEventListener("DOMContentLoaded", updateUI);
+
+
