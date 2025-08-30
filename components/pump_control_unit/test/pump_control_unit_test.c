@@ -3,9 +3,7 @@
 #include <common_headers.h>
 #include <tank_monitor.h>
 #include <level_sensor.h>
-#include <rs485_context.h>
 #include <rs485.h>
-#include <protocol.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <protocol.h>
@@ -15,7 +13,7 @@
 
 pump_control_unit_t *pump_control_unit = NULL;
 
-static const char* TAG = "PUMP_CONTROL_UNIT";
+static const char* PUMP_CTRL_TAG = "PUMP_CONTROL_UNIT";
 
 void pumpControlUnitSetUp(void) {
     // Set up code before each test
