@@ -46,7 +46,7 @@ void tankMonitorSetUp(void) {
     tank_monitor_config_t config;
     config.tank = tank_create((tank_config_t){1, 1000.0, TANK_SHAPE_RECTANGLE, 100.0, 90, 10});
     //config.sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
-    rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
+    rs485_config_t rs485_config = {2, 17, 16, 5, 9600};
     rs485_t* rs485_obj = rs485_create(&rs485_config);
     protocol_callback_t protocol = protocol_gl_a01_read_level;
     send_receive_t send_receive =  dummy_context_Send_receive; //replace with the real context_send_receive
