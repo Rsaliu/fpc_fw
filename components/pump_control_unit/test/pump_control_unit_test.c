@@ -227,17 +227,6 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
         .low_level_in_mm = 10
     };
     // create level sensor config
-    protocol_callback_t protocol = protocol_gl_a01_read_level;
-    send_receive_t send_receive =  rs485_context_send_receive;
-    protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
-    rs485_config_t rs485_config = {2,17,16,4,9600};
-    rs485_t* rs485_obj = rs485_create(&rs485_config);
-
-    level_sensor_config_t sensor_config = {.id = 1,.sensor_addr = 0x01, .protocol = protocol, 
-        .medium_context = rs485_obj, .send_recive = send_receive, .interpreter= interpret};
-    level_sensor_t* level_sensor = level_sensor_create(sensor_config);  
-    TEST_ASSERT_NOT_NULL(level_sensor);
-
     rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
     rs485_t* rs485_obj = rs485_create(&rs485_config);
     protocol_callback_t protocol = protocol_gl_a01_read_level;
