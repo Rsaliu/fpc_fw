@@ -6,6 +6,7 @@ set(EXTRA_COMPONENT_DIRS
                          third_party/esp-protocols/components/mdns
                          "components"
                          )
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(fpc)
 
