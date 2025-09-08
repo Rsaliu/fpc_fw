@@ -27,21 +27,16 @@ static void IRAM_ATTR setup_config_button_isr_handler(void*arg){
 }
 
 void setup_config_button_task(void* Pvparameter){
-    uint8_t button_pin_number;
     EventBits_t event_bit;
     while (1)
     {
         event_bit = xEventGroupWaitBits(button_event, BUTTON_FLAG_BIT0,pdTRUE,pdFALSE,portMAX_DELAY);
-        if ((event_bit & BUTTON_FLAG_BIT0) =! 0)
+        if ((event_bit & BUTTON_FLAG_BIT0) != 0)
         {
             ESP_LOGI(TAG, "button pressed !!!\n");
              dummy_setup_config_button();
-        }
-        
-       
+        } 
     }
-    
-
 }
 
 void setup_config_button_init(setup_config_button_config_t* config){
@@ -49,7 +44,6 @@ void setup_config_button_init(setup_config_button_config_t* config){
     if (button_event == NULL)
     {
         ESP_LOGE(TAG, "failed to create event group\n");
-        return SYSTEM_INVALID_PARAMETER;
     }
     
     gpio_config_t  io_config = {};
@@ -59,7 +53,7 @@ void setup_config_button_init(setup_config_button_config_t* config){
     io_config.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_config);
 
-    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+    gpio_install_isr_service(0);
     gpio_isr_handler_add(config->button_pin_number,setup_config_button_isr_handler,(void*) config);
 }
 
