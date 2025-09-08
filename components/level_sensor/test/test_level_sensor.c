@@ -93,7 +93,7 @@ TEST_CASE("level_sensor_test", "test_level_sensor_destroy"){
     TEST_ASSERT_NULL(level_Sensor);
 }
  
-//  uncomment when  you are using it with the level sensor Hardware  
+// on comment when  you are using it with the level sensor Hardware  
 
 // void real_level_sensor_setup(void){
 //     rs485_config_t rs485_config = {2,17,16,4,9600};

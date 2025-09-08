@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "esp_log.h"
+#include <rs485_context.h>
 #include <protocol.h>
 
 tank_monitor_t *monitor = NULL;
@@ -105,24 +106,24 @@ TEST_CASE("tank_monitor_test", "test_tank_monitor_destroy") {
     TEST_ASSERT_NULL(monitor); // Monitor should be NULL after destruction
 }
 
-// TEST_CASE("tank_monitor_test", "test_tank_monitor_check_level") {
-//     tankMonitorSetUp();
-//     tank_monitor_init(monitor);
+TEST_CASE("tank_monitor_test", "test_tank_monitor_check_level") {
+    tankMonitorSetUp();
+    tank_monitor_init(monitor);
     
-//     // Simulate checking the level sensor
-//     error_type_t result = tank_monitor_check_level(monitor);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    // Simulate checking the level sensor
+    error_type_t result = tank_monitor_check_level(monitor);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     
-//     // Check the state after checking level
-//     tank_monitor_config_t config;
-//     result = tank_monitor_get_config(monitor, &config);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    // Check the state after checking level
+    tank_monitor_config_t config;
+    result = tank_monitor_get_config(monitor, &config);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     
-//     // state will be full since  level sensor stub returns 100 and full level is 90
-//     TEST_ASSERT_EQUAL(TANK_STATE_MACHINE_FULL_STATE, tank_state_machine_state);
+    // state will be full since  level sensor stub returns 100 and full level is 90
+    TEST_ASSERT_EQUAL(TANK_STATE_MACHINE_FULL_STATE, tank_state_machine_state);
     
-//     tankMonitorTearDown();
-// }
+    tankMonitorTearDown();
+}
 
 TEST_CASE("tank_monitor_test", "test_tank_monitor_subscribe_event") {
     tankMonitorSetUp();
