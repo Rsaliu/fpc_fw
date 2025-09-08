@@ -45,19 +45,20 @@ void app_main(void)
         ESP_LOGE("TANK", "Failed to create tanks");
     }
 
-     protocol_callback_t protocol = protocol_gl_a01_read_level;
+    protocol_callback_t protocol = protocol_gl_a01_read_level;
     send_receive_t send_receive =  rs485_context_send_receive;
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
-    rs485_config_t rs485_config = {2,17,16,4,9600};
+    rs485_config_t rs485_config = {2,17,16,5,9600};
     rs485_ttl = rs485_create(&rs485_config);
     rs485_init(rs485_ttl);
 
     level_sensor_config_t sensor_config1 = {.id = 1,.sensor_addr = 0x01, .protocol = protocol, 
-            .medium_context = rs485_ttl, .send_recive = send_receive, .interpreter= interpret};
+            .medium_context = rs485_ttl, .send_recive = send_receive, .interpreter= interpret, .interface = LEVEL_SENSOR_INTERFACE_RS485, 
+            .level_sensor_protocol = GL_A01_PROTOCOL};
         
     level_sensor_config_t sensor_config2 = {.id = 2,.sensor_addr = 0x01, .protocol = protocol, 
-            .medium_context = rs485_ttl, .send_recive = send_receive, .interpreter= interpret}; 
-
+            .medium_context = rs485_ttl, .send_recive = send_receive, .interpreter= interpret,.interface = LEVEL_SENSOR_INTERFACE_RS485, 
+            .level_sensor_protocol = GL_A01_PROTOCOL}; 
     sensor1 = level_sensor_create(sensor_config1);
     level_sensor_init(sensor1);
     sensor2 = level_sensor_create(sensor_config2);
