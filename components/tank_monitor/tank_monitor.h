@@ -1,14 +1,16 @@
+
 #ifndef __TANK_MONITOR_H__
 #define __TANK_MONITOR_H__
 #include <common_headers.h>
 #include "tank.h"
+#include "level_sensor.h"
 #include <event.h>
 
 // dummy level sensor object
-typedef struct {
-    int id; // Unique identifier for the sensor
-} level_sensor_t;
-// dummy level sensor functions
+// typedef struct {
+//     int id; // Unique identifier for the sensor
+// } level_sensor_t;
+// // dummy level sensor functions
 
 typedef enum{
     TANK_MONITOR_EVENT_TANK_FULL = 0, // Event when the tank is full

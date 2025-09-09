@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "esp_log.h"
 
 #define  TANK_MONITOR_MAXIMUM_SUBSCRIBER 10 // Maximum number of tank subscribers
 
@@ -9,6 +10,7 @@ typedef struct{
     int id; // Unique identifier for the subscriber
     tank_monitor_event_hook_t* hook; // Callback function for the subscriber
 }tank_monitor_subscriber_t;
+static const char*TAG = "TANK_MONITOR";
 
 struct tank_monitor_t {
     tank_monitor_config_t *config; // Pointer to the tank monitor configuration
@@ -19,15 +21,17 @@ struct tank_monitor_t {
 };
 
 //dummy level_sensor object
-error_type_t level_sensor_get_level_in_mm(level_sensor_t *sensor, int *level) {
-    if (sensor == NULL || level == NULL) {
-        return SYSTEM_NULL_PARAMETER; // Handle null sensor or level pointer
-    }
-    // Simulate getting the level from the sensor
-    *level = 100; // Example level in mm
-    printf("Level sensor ID: %d, Current level: %d mm\n", sensor->id, *level);
-    return SYSTEM_OK;
-}
+// error_type_t 
+// level_sensor_get_level_in_mm(level_sensor_t *sensor, int *level) {
+//     ESP_LOGI(TAG, "Checking sensor pointer: %p, level pointer: %p", sensor, level);
+//     if (sensor == NULL || level == NULL) {
+//         return SYSTEM_NULL_PARAMETER; // Handle null sensor or level pointer
+//     }
+//     // Simulate getting the level from the sensor
+//     *level = 100; // Example level in mm
+//     ESP_LOGI(TAG,"Level sensor ID: %d, Current level: %d mm\n", sensor->id, *level);
+//     return SYSTEM_OK;
+// }
 //
 
 tank_monitor_t* tank_monitor_create(tank_monitor_config_t config) {
@@ -77,7 +81,7 @@ error_type_t tank_monitor_deinit(tank_monitor_t *monitor) {
     }
 
     monitor->state = TANK_MONITOR_NOT_INITIALIZED;
-    printf("Tank monitor deinitialized\n");
+    ESP_LOGI(TAG,"Tank monitor deinitialized\n");
 
     return SYSTEM_OK;
 }
@@ -132,14 +136,18 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
     }
 
     // Simulate checking the level sensor
-    int current_level;
-    error_type_t err = level_sensor_get_level_in_mm(monitor->config->sensor, &current_level);
+    uint16_t current_level;
+     ESP_LOGI(TAG, " calling level sensor get level in mm");
+    error_type_t err = level_sensor_read(monitor->config->sensor, &current_level);
+   
     if(err != SYSTEM_OK) {
+        ESP_LOGE(TAG, "failed to get level");
         return err; // Handle error in getting level from sensor
     }
     tank_config_t tank_config;
     err = tank_get_config(monitor->config->tank, &tank_config); 
     if(err != SYSTEM_OK) {
+        ESP_LOGE(TAG, "failed to get tank");
         return err; // Handle error in getting tank configuration
     }
     int full_level = tank_config.full_level_in_mm;
@@ -151,30 +159,31 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
         case TANK_STATE_MACHINE_NORMAL_STATE:
             if (current_level >= full_level) {
                 monitor->tank_state = TANK_STATE_MACHINE_FULL_STATE;
-                printf("Tank is full\n");
+                ESP_LOGI(TAG,"Tank is full\n");
             } else if (current_level < low_level) {
                 monitor->tank_state = TANK_STATE_MACHINE_LOW_STATE;
-                printf("Tank is below low level\n");
+                ESP_LOGI(TAG,"Tank is below low level\n");
             }
             break;
 
         case TANK_STATE_MACHINE_FULL_STATE:
             if (current_level < full_level) {
                 monitor->tank_state = TANK_STATE_MACHINE_NORMAL_STATE;
-                printf("Tank is not full anymore\n");
+                ESP_LOGI(TAG,"Tank is not full anymore\n");
             }
             break;
 
         case TANK_STATE_MACHINE_LOW_STATE:
             if (current_level >= low_level) {
                 monitor->tank_state = TANK_STATE_MACHINE_NORMAL_STATE;
-                printf("Tank is back to normal state\n");
+                ESP_LOGI(TAG,"Tank is back to normal state\n");
             }
             break;
 
         default:
             return SYSTEM_INVALID_STATE; // Invalid state
     }
+
     if(monitor->tank_state != previous_state) {
         // Notify subscribers about the state change
         for (int i = 0; i < monitor->subscriber_count; i++) {
@@ -195,13 +204,13 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
 error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id)
 {
     if (monitor == NULL || hook == NULL || event_id == NULL) {
-        printf("Error: Null parameter in tank_monitor_subscribe_event\n");
+        ESP_LOGE(TAG,"Error: Null parameter in tank_monitor_subscribe_event\n");
         return SYSTEM_NULL_PARAMETER; // Handle null monitor, callback, or event_id pointer
     }
-    printf("monitor pointer: %p, hook pointer: %p, event_id pointer: %p\n", monitor, hook, event_id);
+    ESP_LOGI(TAG,"monitor pointer: %p, hook pointer: %p, event_id pointer: %p\n", monitor, hook, event_id);
     // Check if the monitor is initialized
     if (monitor->state != TANK_MONITOR_INITIALIZED) {
-        printf("Tank monitor is not initialized\n");
+        ESP_LOGE(TAG,"Tank monitor is not initialized\n");
         return SYSTEM_INVALID_STATE; // Monitor is not initialized
     }
     // Check if the maximum number of subscribers is reached
@@ -252,9 +261,9 @@ error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id
 }
 
 error_type_t tank_monitor_print_info(tank_monitor_t* monitor){
-    printf("Tank ID: %d\n", monitor->config->id);
-    printf("Subscriber Count: %d\n",monitor->subscriber_count );
-    printf("State: %d\n", monitor->state);
+    ESP_LOGI(TAG,"Tank ID: %d\n", monitor->config->id);
+    ESP_LOGI(TAG,"Subscriber Count: %d\n",monitor->subscriber_count );
+    ESP_LOGI(TAG,"State: %d\n", monitor->state);
     return SYSTEM_OK;
 }
 

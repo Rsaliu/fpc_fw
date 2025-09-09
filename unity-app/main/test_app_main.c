@@ -18,7 +18,6 @@ static void print_banner(const char* text);
 
 void app_main(void)
 {
-
     print_banner("Running all the registered tests");
     UNITY_BEGIN();
     unity_run_test_by_name("adc_reader_test");
@@ -32,9 +31,13 @@ void app_main(void)
     unity_run_test_by_name("tank_monitor_test");
     unity_run_test_by_name("pump_control_unit_test");
     unity_run_test_by_name("relay_test");
+    unity_run_test_by_name("protocol_test");
+    unity_run_test_by_name("crc_test");
     unity_run_test_by_name("webserver_test");
     unity_run_test_by_name("wifi_hotspot_test");
     unity_run_test_by_name("pump_monitor_test");
+    unity_run_test_by_name("validate_json_test");
+    unity_run_test_by_name("setup_config_test");
     UNITY_END();
 }
 

@@ -8,7 +8,7 @@
 
 
 void rs485_setup(void){
-    rs485_config_t config ={2,17,16,4,9600};
+    rs485_config_t config ={2,17,16,5,9600};
     rs485 = rs485_create(&config);
 }
 
@@ -35,7 +35,7 @@ TEST_CASE("rs485_test", "test_rs485_init"){
     rs485_tearDown();
 }
 
-TEST_CASE("leve_sensor_test", "test_rs485_write"){
+TEST_CASE("rs485_test", "test_rs485_write"){
     rs485_setup();
     error_type_t test_result;
     test_result = rs485_init(rs485);
