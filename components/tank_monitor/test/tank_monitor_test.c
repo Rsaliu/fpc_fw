@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "esp_log.h"
+#include <rs485_context.h>
 #include <protocol.h>
 
 tank_monitor_t *monitor = NULL;
@@ -45,7 +46,7 @@ void tankMonitorSetUp(void) {
     tank_monitor_config_t config;
     config.tank = tank_create((tank_config_t){1, 1000.0, TANK_SHAPE_RECTANGLE, 100.0, 90, 10});
     //config.sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
-    rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
+    rs485_config_t rs485_config = {2, 17, 16, 5, 9600};
     rs485_t* rs485_obj = rs485_create(&rs485_config);
     protocol_callback_t protocol = protocol_gl_a01_read_level;
     send_receive_t send_receive =  dummy_context_Send_receive; //replace with the real context_send_receive
@@ -104,24 +105,24 @@ TEST_CASE("tank_monitor_test", "test_tank_monitor_destroy") {
     TEST_ASSERT_NULL(monitor); // Monitor should be NULL after destruction
 }
 
-// TEST_CASE("tank_monitor_test", "test_tank_monitor_check_level") {
-//     tankMonitorSetUp();
-//     tank_monitor_init(monitor);
+TEST_CASE("tank_monitor_test", "test_tank_monitor_check_level") {
+    tankMonitorSetUp();
+    tank_monitor_init(monitor);
     
-//     // Simulate checking the level sensor
-//     error_type_t result = tank_monitor_check_level(monitor);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    // Simulate checking the level sensor
+    error_type_t result = tank_monitor_check_level(monitor);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     
-//     // Check the state after checking level
-//     tank_monitor_config_t config;
-//     result = tank_monitor_get_config(monitor, &config);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    // Check the state after checking level
+    tank_monitor_config_t config;
+    result = tank_monitor_get_config(monitor, &config);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     
-//     // state will be full since  level sensor stub returns 100 and full level is 90
-//     TEST_ASSERT_EQUAL(TANK_STATE_MACHINE_FULL_STATE, tank_state_machine_state);
+    // state will be full since  level sensor stub returns 100 and full level is 90
+    TEST_ASSERT_EQUAL(TANK_STATE_MACHINE_FULL_STATE, tank_state_machine_state);
     
-//     tankMonitorTearDown();
-// }
+    tankMonitorTearDown();
+}
 
 TEST_CASE("tank_monitor_test", "test_tank_monitor_subscribe_event") {
     tankMonitorSetUp();
