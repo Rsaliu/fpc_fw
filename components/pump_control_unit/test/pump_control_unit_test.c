@@ -12,6 +12,7 @@
 #include <string.h>
 
 pump_control_unit_t *pump_control_unit = NULL;
+
 static const char* PUMP_CTRL_TAG = "PUMP_CONTROL_UNIT";
 
 void pumpControlUnitSetUp(void) {
@@ -225,8 +226,8 @@ TEST_CASE("pump_control_unit_test", "test_pump_control_unit_full_end_to_end"){
         .full_level_in_mm = 90,
         .low_level_in_mm = 10
     };
-
-    rs485_config_t rs485_config = {2, 17, 16, 4, 9600};
+    // create level sensor config
+    rs485_config_t rs485_config = {2, 17, 16, 5, 9600};
     rs485_t* rs485_obj = rs485_create(&rs485_config);
     protocol_callback_t protocol = protocol_gl_a01_read_level;
     send_receive_t send_receive =  dummy_context_Send_receive; //replace with the real context_send_receive
