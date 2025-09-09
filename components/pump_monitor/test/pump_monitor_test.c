@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "esp_log.h"
-#include <current_sensor.h>
 
 
 static const char *TAG = "TEST_PUMP_MONITOR";
@@ -13,14 +12,25 @@ static float mock_current_value = 6.23f;
 
 
 
+error_type_t current_sensor_get_current(current_sensor_t *sensor, float *current)
+{
+    if (!sensor || !current) {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    *current = mock_current_value;
+    ESP_LOGI(TAG, "Mock Current sensor ID: %d, Current value: %.2f amp",
+             sensor->id, (double)(*current));
+    return SYSTEM_OK;
+}
+
 static pump_state_machine_state_t pump_state_machine_state = PUMP_STATE_MACHINE_NORMAL_STATE;
 
 
 void pump_test_callback(void *context, int actuator_id, event_type_t event, int pump_monitor_id)
 {
-
+    
     ESP_LOGI(TAG, "Pump state changed to: %d for pump_monitor ID: %d, actuator ID: %d", event, pump_monitor_id, actuator_id);
-
+    
     if (event == EVENT_PUMP_NORMAL)
     {
         pump_state_machine_state = PUMP_STATE_MACHINE_NORMAL_STATE;
@@ -53,12 +63,18 @@ void pumpMonitorSetUp(void)
         .power_in_hp = 2.0f,
         .current_rating = 6.23f});
 
+    
+    
+    config.sensor = malloc(sizeof(current_sensor_t));
+    config.id = 1;
+    config.sensor->id = 1;
+
     pump_monitor = pump_monitor_create(config);
 }
 
 void pumpMonitorTearDown(void)
 {
-
+  
     if (pump_monitor != NULL)
     {
         pump_monitor_destroy(&pump_monitor);
