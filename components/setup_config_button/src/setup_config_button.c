@@ -12,21 +12,25 @@
 static EventGroupHandle_t button_event;
 static const char*TAG = "SETUP_CONFIG_BUTTON";
 
-static void dummy_setup_config_button(){
-    ESP_LOGI(TAG, "FPC is in configuration mode");
+// static void dummy_setup_config_button(){
+//     ESP_LOGI(TAG, "FPC is in configuration mode");
 
-}
+// }
 
 static void IRAM_ATTR setup_config_button_isr_handler(void*arg){
-    setup_config_button_config_t* config = (setup_config_button_config_t*)arg;
-    config->setup_config_button_mode = true;
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    xEventGroupSetBitsFromISR(button_event, BUTTON_FLAG_BIT0, &xHigherPriorityTaskWoken);
+    BaseType_t xHigherPriorityTaskWoken,xResult;
+    xHigherPriorityTaskWoken = pdFALSE;
+    xResult = xEventGroupSetBitsFromISR(button_event, BUTTON_FLAG_BIT0, &xHigherPriorityTaskWoken);
+
+    if(xResult != pdFALSE){
+
     portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+    }
     
 }
 
 void setup_config_button_task(void* Pvparameter){
+    setup_config_button_config_t*config = (setup_config_button_config_t*)Pvparameter;
     EventBits_t event_bit;
     while (1)
     {
@@ -34,7 +38,11 @@ void setup_config_button_task(void* Pvparameter){
         if ((event_bit & BUTTON_FLAG_BIT0) != 0)
         {
             ESP_LOGI(TAG, "button pressed !!!\n");
-             dummy_setup_config_button();
+            error_type_t err = config->config_button();
+            if (err != SYSTEM_OK)
+            {
+                ESP_LOGE(TAG, "configuration failed\n");
+            }
         } 
     }
 }
@@ -53,7 +61,7 @@ void setup_config_button_init(setup_config_button_config_t* config){
     io_config.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_config);
 
-    gpio_install_isr_service(0);
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add(config->button_pin_number,setup_config_button_isr_handler,(void*) config);
 }
 

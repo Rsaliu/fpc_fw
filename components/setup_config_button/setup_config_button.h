@@ -4,12 +4,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef error_type_t (*setup_config_button_t)();
  
 typedef struct 
 {
 
     uint8_t button_pin_number;
-    bool setup_config_button_mode;
+    setup_config_button_t config_button;
+
 
 }setup_config_button_config_t;
 void setup_config_button_task(void* Pvparameter);
