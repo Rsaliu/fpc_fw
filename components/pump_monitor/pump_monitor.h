@@ -1,9 +1,21 @@
 #ifndef __PUMP_MONITOR_H__
 #define __PUMP_MONITOR_H__
-#include <common_headers.h>
-#include "pump.h"
+#include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <cJSON.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include <event.h>
-#include <current_sensor.h>
+#include "pump.h"
+#include "current_sensor.h"
+#include "pump_monitor.h"
+#include "adc_reader.h"
+#include "acs712_current_sensor.h"
+#include "ads1115.h"
+#include "current_sensor_context.h"
+
 
 typedef enum
 {
@@ -52,5 +64,6 @@ error_type_t pump_monitor_get_config(const pump_monitor_t   *pump_monitor,  pump
 error_type_t pump_monitor_check_current(pump_monitor_t   *pump_monitor);
 error_type_t pump_monitor_subscribe_event(pump_monitor_t   *pump_monitor, const pump_monitor_event_hook_t* hook,int* event_id);
 error_type_t pump_monitor_unsubscribe_event(pump_monitor_t  *pump_monitor,int event_id);
+error_type_t current_sensor_get_current(current_sensor_t *sensor, float *current);
 
 #endif // __PUMP_MONITOR_H__
