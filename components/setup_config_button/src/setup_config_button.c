@@ -12,11 +12,6 @@
 static EventGroupHandle_t button_event;
 static const char*TAG = "SETUP_CONFIG_BUTTON";
 
-// static void dummy_setup_config_button(){
-//     ESP_LOGI(TAG, "FPC is in configuration mode");
-
-// }
-
 static void IRAM_ATTR setup_config_button_isr_handler(void*arg){
     BaseType_t xHigherPriorityTaskWoken,xResult;
     xHigherPriorityTaskWoken = pdFALSE;
