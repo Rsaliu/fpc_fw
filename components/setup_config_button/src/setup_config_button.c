@@ -5,6 +5,7 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "driver/gpio.h"
+#include "esp_intr_types.h"
 #include "esp_log.h"
 
 #define BUTTON_FLAG_BIT0 (1 << 0)
