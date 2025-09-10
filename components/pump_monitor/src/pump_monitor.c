@@ -1,8 +1,10 @@
+#include <pump_monitor.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "esp_log.h"
 #include "pump_monitor.h"
+#include <event.h>
 
 static const char *TAG = "pump_monitor";
 
@@ -154,6 +156,7 @@ error_type_t pump_monitor_check_current(pump_monitor_t *pump_monitor)
 
     // Simulate checking the current sensor
     float current_amp_reading;
+  
     error_type_t err = current_sensor_get_current_in_amp(pump_monitor->config->sensor, &current_amp_reading);
 
     if (err != SYSTEM_OK)
@@ -179,13 +182,13 @@ error_type_t pump_monitor_check_current(pump_monitor_t *pump_monitor)
         if (current_amp_reading < low_current_supply)
         {
             pump_monitor->pump_state = PUMP_STATE_MACHINE_UNDERCURRENT_STATE;
-
+          
             ESP_LOGI(TAG, "Current supply is below normal: %.2f < %.2f", current_amp_reading, low_current_supply);
         }
         else if (current_amp_reading > high_current_supply)
         {
             pump_monitor->pump_state = PUMP_STATE_MACHINE_OVERCURRENT_STATE;
-
+            
             ESP_LOGI(TAG, "Current supply is above normal: %.2f > %.2f", current_amp_reading, high_current_supply);
         }
         break;
@@ -236,11 +239,11 @@ error_type_t pump_monitor_subscribe_event(pump_monitor_t *pump_monitor, const pu
         return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor, callback, or event_id pointer
     }
     ESP_LOGE(TAG, "pump_monitor pointer: %p, hook pointer: %p, event_id pointer: %p\n", pump_monitor, hook, event_id);
-
+    
     //  Check if the pump_monitor is initialized
     if (pump_monitor->state != PUMP_MONITOR_INITIALIZED)
     {
-        // printf("Pump monitor is not initialized\n");
+      
         ESP_LOGE(TAG, "Pump monitor is not initialized");
         return SYSTEM_INVALID_STATE; // pump_monitor is not initialized
     }
