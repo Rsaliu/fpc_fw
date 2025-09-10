@@ -16,6 +16,7 @@
 #include "ads1115.h"
 #include "current_sensor_context.h"
 
+#define PUMP_MONITOR_MAXIMUM_SUBSCRIBER 10
 
 typedef enum
 {
@@ -54,6 +55,21 @@ typedef struct {
     int actuator_id; // Action ID for the event
     pump_monitor_event_callback_t callback; // Callback function for the subscriber
 } pump_monitor_event_hook_t;
+
+typedef struct
+{
+    int id;                          // Unique identifier for the subscriber
+    pump_monitor_event_hook_t *hook; // Callback function for the subscriber
+} pump_monitor_subscriber_t;
+
+struct pump_monitor_t
+{
+    pump_monitor_config_t *config;                                           // Pointer to the pump monitor configuration
+    pump_monitor_state_t state;                                              // State of the pump monitor
+    pump_state_machine_state_t pump_state;                                   // State of the pump being monitored
+    pump_monitor_subscriber_t *subscribers[PUMP_MONITOR_MAXIMUM_SUBSCRIBER]; // Callback for pump state events
+    int subscriber_count;                                                    // Count of subscribers
+};
 
 pump_monitor_t* pump_monitor_create(pump_monitor_config_t config);
 error_type_t pump_monitor_init(pump_monitor_t *pump_monitor);
