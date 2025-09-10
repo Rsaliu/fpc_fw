@@ -15,9 +15,9 @@
 
 static const char *TAG = "SETUP_CONFIG";
 rs485_t *rs485Obj;
-acs712_sensor_t* acs712_obj;
+acs712_sensor_t *acs712_obj;
 
-static cJSON *get_first_pump_control_unit_array(cJSON *pump_control_unit_json)
+static cJSON *get_pump_control_unit_array(cJSON *pump_control_unit_json)
 {
     cJSON *pump_control_units = cJSON_GetObjectItem(pump_control_unit_json, "pump_control_units");
     if (!pump_control_units || !cJSON_IsArray(pump_control_units))
@@ -25,20 +25,19 @@ static cJSON *get_first_pump_control_unit_array(cJSON *pump_control_unit_json)
         ESP_LOGE(TAG, "pump_control_units is missing or not an array");
         return NULL;
     }
-    // get the first array of object in  pump control unit
-    cJSON *pump_control_unit_array = cJSON_GetArrayItem(pump_control_units, 0);
-    if (!pump_control_unit_array)
+    // get the array of object in  pump control unit
+    for (int i = 0; i < cJSON_GetArraySize(pump_control_units); i++)
     {
-        ESP_LOGE(TAG, "object array does not exit");
-        return NULL;
-    }
-
-    return pump_control_unit_array;
+        cJSON *item = cJSON_GetArrayItem(pump_control_units, i);
+        if (item)return item;
+    } 
+   ESP_LOGE(TAG, "object array does not exit\n"); 
+   return NULL;
+    
 }
 
-error_type_t setup_config_tank(cJSON *tank_json)
-{
-    cJSON *get_tank_arr = get_first_pump_control_unit_array(tank_json);
+error_type_t setup_config_tank(cJSON *tank_json){
+    cJSON *get_tank_arr = get_pump_control_unit_array(tank_json);
     if (!get_tank_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -81,7 +80,7 @@ error_type_t setup_config_tank(cJSON *tank_json)
 
 error_type_t setup_config_pump(cJSON *pump_json)
 {
-    cJSON *get_pump_arr = get_first_pump_control_unit_array(pump_json);
+    cJSON *get_pump_arr = get_pump_control_unit_array(pump_json);
     if (!get_pump_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -118,7 +117,7 @@ error_type_t setup_config_pump(cJSON *pump_json)
 
 error_type_t setup_config_tank_monitor(cJSON *tank_monitor_json)
 {
-    cJSON *get_tank_monitor_arr = get_first_pump_control_unit_array(tank_monitor_json);
+    cJSON *get_tank_monitor_arr = get_pump_control_unit_array(tank_monitor_json);
     if (!get_tank_monitor_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -162,7 +161,7 @@ error_type_t setup_config_tank_monitor(cJSON *tank_monitor_json)
 
 error_type_t setup_config_pump_monitor(cJSON *pump_monitor_json)
 {
-    cJSON *get_pump_monitor_arr = get_first_pump_control_unit_array(pump_monitor_json);
+    cJSON *get_pump_monitor_arr = get_pump_control_unit_array(pump_monitor_json);
     if (!get_pump_monitor_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -205,7 +204,7 @@ error_type_t setup_config_pump_monitor(cJSON *pump_monitor_json)
 
 error_type_t setup_config_relay_driver(cJSON *relay_json)
 {
-    cJSON *get_relay_arr = get_first_pump_control_unit_array(relay_json);
+    cJSON *get_relay_arr = get_pump_control_unit_array(relay_json);
     if (!get_relay_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -236,30 +235,35 @@ error_type_t setup_config_relay_driver(cJSON *relay_json)
     return SYSTEM_OK;
 }
 
-static error_type_t set_level_sensor_interface_to_string(const char* config_str, level_sensor_config_t *config)
+static error_type_t set_level_sensor_interface_to_string(const char *config_str, level_sensor_config_t *config)
 {
     if (strcmp("RS485", config_str) == 0)
     {
-        config->medium_context = (void*)rs485Obj;
-    }else if (strcmp("UART", config_str)==0)
+        config->medium_context = (void *)rs485Obj;
+    }
+    else if (strcmp("UART", config_str) == 0)
     {
-        config->medium_context = (void*)rs485Obj;
-    }else if (strcmp("PWM", config_str) == 0)
+        config->medium_context = (void *)rs485Obj;
+    }
+    else if (strcmp("PWM", config_str) == 0)
     {
-        config->medium_context = (void*)rs485Obj;
-    }else
+        config->medium_context = (void *)rs485Obj;
+    }
+    else
     {
         ESP_LOGW(TAG, "Unknow interface");
         return SYSTEM_INVALID_PARAMETER;
     }
-    return SYSTEM_OK;    
+    return SYSTEM_OK;
 }
 
-static error_type_t set_level_sensor_protocol_to_string(const char* protocol_str,  level_sensor_config_t* config){
+static error_type_t set_level_sensor_protocol_to_string(const char *protocol_str, level_sensor_config_t *config)
+{
     if (strcmp("GL_A01_PROTOCOL", protocol_str) == 0)
     {
         config->protocol = protocol_gl_a01_read_level;
-    }else
+    }
+    else
     {
         ESP_LOGW(TAG, "Unknow protocol");
         return SYSTEM_INVALID_PARAMETER;
@@ -269,7 +273,7 @@ static error_type_t set_level_sensor_protocol_to_string(const char* protocol_str
 
 error_type_t setup_config_level_sensor(cJSON *level_sensor_json)
 {
-    cJSON *get_level_sensor_arr = get_first_pump_control_unit_array(level_sensor_json);
+    cJSON *get_level_sensor_arr = get_pump_control_unit_array(level_sensor_json);
     if (!get_level_sensor_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -285,27 +289,31 @@ error_type_t setup_config_level_sensor(cJSON *level_sensor_json)
     // Read level sensor object from json
 
     // level sensor id
-    cJSON* id = cJSON_GetObjectItem(level_sensor, "id");
-    if(!id)return SYSTEM_INVALID_PARAMETER;
+    cJSON *id = cJSON_GetObjectItem(level_sensor, "id");
+    if (!id)
+        return SYSTEM_INVALID_PARAMETER;
     int level_sensor_id = id->valueint;
 
     // level sensor addr
-    cJSON* address = cJSON_GetObjectItem(level_sensor, "sensor_addr");
-    if(!address)return SYSTEM_INVALID_PARAMETER;
+    cJSON *address = cJSON_GetObjectItem(level_sensor, "sensor_addr");
+    if (!address)
+        return SYSTEM_INVALID_PARAMETER;
     uint8_t level_sensor_addr = address->valueint;
 
-    //level sensor interface
-    cJSON* interface = cJSON_GetObjectItem(level_sensor, "interface");
-    if(! interface)return SYSTEM_INVALID_PARAMETER;
-    const char* interface_str = interface->valuestring;
+    // level sensor interface
+    cJSON *interface = cJSON_GetObjectItem(level_sensor, "interface");
+    if (!interface)
+        return SYSTEM_INVALID_PARAMETER;
+    const char *interface_str = interface->valuestring;
 
-    //level sensor protocol
-    cJSON* protocol = cJSON_GetObjectItem(level_sensor, "protocol");
-    if(! protocol) return SYSTEM_INVALID_PARAMETER;
-    const char* protocol_str = protocol->valuestring;
+    // level sensor protocol
+    cJSON *protocol = cJSON_GetObjectItem(level_sensor, "protocol");
+    if (!protocol)
+        return SYSTEM_INVALID_PARAMETER;
+    const char *protocol_str = protocol->valuestring;
     level_sensor_config_t level_sensor_config = {
         .id = level_sensor_id,
-        .medium_context = (void*)NULL,
+        .medium_context = (void *)NULL,
         .sensor_addr = level_sensor_addr,
         .protocol = NULL,
     };
@@ -320,21 +328,25 @@ error_type_t setup_config_level_sensor(cJSON *level_sensor_json)
     return SYSTEM_OK;
 }
 
-static error_type_t set_current_sensor_interface_to_string(const char* current_sensor_interface_str, current_sensor_config_t* config ){
+static error_type_t set_current_sensor_interface_to_string(const char *current_sensor_interface_str, current_sensor_config_t *config)
+{
     if (strcmp("I2C", current_sensor_interface_str) == 0)
     {
-        config->context = (void*)acs712_obj;
-    }else if (strcmp("SPI", current_sensor_interface_str) == 0)
+        config->context = (void *)acs712_obj;
+    }
+    else if (strcmp("SPI", current_sensor_interface_str) == 0)
     {
-        config->context = (void*)acs712_obj;
-    }else if (strcmp("PWM", current_sensor_interface_str) == 0)
+        config->context = (void *)acs712_obj;
+    }
+    else if (strcmp("PWM", current_sensor_interface_str) == 0)
     {
-        config->context= (void*)acs712_obj;
-    }else if (strcmp("ANALOG_VOLTAGE", current_sensor_interface_str) = 0
-)
+        config->context = (void *)acs712_obj;
+    }
+    else if (strcmp("ANALOG_VOLTAGE", current_sensor_interface_str) == 0)
     {
-        config->context = (void*)acs712_obj;
-    }else
+        config->context = (void *)acs712_obj;
+    }
+    else
     {
         ESP_LOGE(TAG, "unknown current sensor interface");
     }
@@ -343,7 +355,7 @@ static error_type_t set_current_sensor_interface_to_string(const char* current_s
 
 error_type_t setup_config_current_sensor(cJSON *current_sensor_json)
 {
-    cJSON *get_current_sensor_arr = get_first_pump_control_unit_array(current_sensor_json);
+    cJSON *get_current_sensor_arr = get_pump_control_unit_array(current_sensor_json);
     if (!get_current_sensor_arr)
     {
         return SYSTEM_NULL_PARAMETER;
@@ -357,27 +369,31 @@ error_type_t setup_config_current_sensor(cJSON *current_sensor_json)
     }
 
     // Read current sensor object from json
-    cJSON* id = cJSON_GetObjectItem(current_sensor, "id");
-    if(! id)return SYSTEM_INVALID_PARAMETER;
+    cJSON *id = cJSON_GetObjectItem(current_sensor, "id");
+    if (!id)
+        return SYSTEM_INVALID_PARAMETER;
     int current_sensor_id = id->valueint;
 
-    //current sensor interface
-    cJSON* interface = cJSON_GetObjectItem(current_sensor, "interface");
-    if(! interface) return SYSTEM_INVALID_PARAMETER;
-    const char* interface_str = interface->valuestring;
+    // current sensor interface
+    cJSON *interface = cJSON_GetObjectItem(current_sensor, "interface");
+    if (!interface)
+        return SYSTEM_INVALID_PARAMETER;
+    const char *interface_str = interface->valuestring;
     // current sensor make
     cJSON *make = cJSON_GetObjectItem(current_sensor, "make");
-    if(!make) return SYSTEM_INVALID_PARAMETER;
-    char* current_sensor_make = make->valuestring;
+    if (!make)
+        return SYSTEM_INVALID_PARAMETER;
+    char *current_sensor_make = make->valuestring;
 
-    //max_current
-    cJSON* maximum_current = cJSON_GetObjectItem(current_sensor, "max_current");
-    if(! maximum_current) return SYSTEM_INVALID_PARAMETER;
+    // max_current
+    cJSON *maximum_current = cJSON_GetObjectItem(current_sensor, "max_current");
+    if (!maximum_current)
+        return SYSTEM_INVALID_PARAMETER;
     int max_current = maximum_current->valueint;
 
     current_sensor_config_t current_sensor_config = {
         .id = current_sensor_id,
-        .context = (void*)NULL,
+        .context = (void *)NULL,
         .make = current_sensor_make,
         .max_current = max_current,
     };
@@ -391,4 +407,3 @@ error_type_t setup_config_current_sensor(cJSON *current_sensor_json)
 
     return SYSTEM_OK;
 }
-
