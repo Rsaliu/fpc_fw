@@ -52,7 +52,7 @@ const char* dummy_json_file() {
     "      \"id\": 1,"
     "      \"interface\": \"RS485\","
     "      \"sensor_addr\": 10,"
-    "      \"level_sensor_protocol\": \"GL_A01_PROTOCOL\""
+    "      \"protocol\": \"GL_A01_PROTOCOL\""
     "    },"
     "    \"relay\": {"
     "      \"id\": 1,"
@@ -71,91 +71,92 @@ const char* dummy_json_file() {
 }
 
 
-TEST_CASE("setup_config_test","test_tank_setup_config"){
+TEST_CASE("setup_config_test","test_setup_config_tank"){
     setup_config_Setup();
     const char* json_file = dummy_json_file();
     cJSON* root = cJSON_Parse(json_file);
     TEST_ASSERT_NOT_EQUAL(NULL, root);
-    error_type_t err = tank_Setup_config(root);
+    error_type_t err = setup_config_tank(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "tank_setup_config is sucessful\n");
+    cJSON_Delete(root);
     setup_config_teardown();
 }
 
-TEST_CASE("setup_config_test", "test_pump_setup_config"){
+TEST_CASE("setup_config_test", "test_setup_config_pump"){
     setup_config_Setup();
     const char* json_file = dummy_json_file();
     cJSON* root = cJSON_Parse(json_file);
     TEST_ASSERT_NOT_EQUAL(NULL, root);
-    error_type_t err = pump_setup_config(root);
+    error_type_t err = setup_config_pump(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "pump_setup_config is sucessful\n");
-
+    cJSON_Delete(root);
      setup_config_teardown();
 
 }
 
-TEST_CASE("setup_config_test", "test_tank_monitor_setup_config"){
+TEST_CASE("setup_config_test", "test_setup_config_tank_monitor"){
     setup_config_Setup();
     const char* json_file = dummy_json_file();
     cJSON* root = cJSON_Parse(json_file);
     TEST_ASSERT_NOT_EQUAL(NULL, root);
-    error_type_t err = tank_monitor_setup_config(root);
+    error_type_t err = setup_config_tank_monitor(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "tank_monitor_setup_config is sucessful\n");
-
+    cJSON_Delete(root);
      setup_config_teardown();
 
 }
 
-TEST_CASE("setup_config_test", "test_pump_monitor_setup_config"){
+TEST_CASE("setup_config_test", "test_setup_config_pump_monitor"){
     setup_config_Setup();
     const char* json_file = dummy_json_file();
     cJSON* root = cJSON_Parse(json_file);
     TEST_ASSERT_NOT_EQUAL(NULL, root);
-    error_type_t err = pump_monitor_setup_config(root);
+    error_type_t err = setup_config_pump_monitor(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "pump_ monitor_setup_config is sucessful\n");
-
+    cJSON_Delete(root);
      setup_config_teardown();
 
 }
 
-TEST_CASE("setup_config_test", "test_relay_driver_setup_config"){
+TEST_CASE("setup_config_test", "test_setup_config_relay_driver"){
     setup_config_Setup();
     const char* json_file = dummy_json_file();
     cJSON* root = cJSON_Parse(json_file);
     TEST_ASSERT_NOT_EQUAL(NULL, root);
-    error_type_t err = relay_driver_setup_config(root);
+    error_type_t err = setup_config_relay_driver(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "relay_setup_config is sucessful\n");
-
+     cJSON_Delete(root);
      setup_config_teardown();
 
 }
 
-TEST_CASE("setup_config_test", "test_level_sensor_setup_config"){
+TEST_CASE("setup_config_test", "test_setup_config_level_sensor"){
     setup_config_Setup();
     const char* json_file = dummy_json_file();
     cJSON* root = cJSON_Parse(json_file);
     TEST_ASSERT_NOT_EQUAL(NULL, root);
-    error_type_t err = level_sensor_setup_config(root);
+    error_type_t err = setup_config_level_sensor(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "level_sensor_setup_config is sucessful\n");
-
-     setup_config_teardown();
+    cJSON_Delete(root);
+    setup_config_teardown();
 
 }
 
-TEST_CASE("setup_config_test", "test_current_sensor_setup_config"){
+TEST_CASE("setup_config_test", "test_setup_config_current_sensor"){
     setup_config_Setup();
     const char* json_file = dummy_json_file();
     cJSON* root = cJSON_Parse(json_file);
     TEST_ASSERT_NOT_EQUAL(NULL, root);
-    error_type_t err = current_sensor_setup_confi(root);
+    error_type_t err = setup_config_current_sensor(root);
     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
     ESP_LOGI(TAG, "current_sensor_setup_config is sucessful\n");
-
+     cJSON_Delete(root);
      setup_config_teardown();
 
 }
