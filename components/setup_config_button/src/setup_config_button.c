@@ -57,6 +57,7 @@ void setup_config_button_init(setup_config_button_config_t* config){
     io_config.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_config);
 
+    //ESP_INTR_FLAG_LEVEL3 use to set the isr priority level
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add(config->button_pin_number,setup_config_button_isr_handler,(void*) config);
 }
