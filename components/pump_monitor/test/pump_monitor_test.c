@@ -4,12 +4,16 @@
 #include <stdio.h>
 #include "esp_log.h"
 
+// Mock definition of current_sensor_t for testing
+typedef struct current_sensor_t {
+    int id; // Sensor ID
+} current_sensor_t;
 
 static const char *TAG = "TEST_PUMP_MONITOR";
 pump_monitor_t *pump_monitor = NULL;
 
 static float mock_current_value = 6.23f;
-
+static pump_state_machine_state_t pump_state_machine_state = PUMP_STATE_MACHINE_NORMAL_STATE;
 
 
 error_type_t current_sensor_get_current(current_sensor_t *sensor, float *current)
@@ -22,8 +26,6 @@ error_type_t current_sensor_get_current(current_sensor_t *sensor, float *current
              sensor->id, (double)(*current));
     return SYSTEM_OK;
 }
-
-static pump_state_machine_state_t pump_state_machine_state = PUMP_STATE_MACHINE_NORMAL_STATE;
 
 
 void pump_test_callback(void *context, int actuator_id, event_type_t event, int pump_monitor_id)
@@ -77,6 +79,9 @@ void pumpMonitorTearDown(void)
   
     if (pump_monitor != NULL)
     {
+        if (pump_monitor->config != NULL && pump_monitor->config->sensor != NULL) {
+            free(pump_monitor->config->sensor);
+        }
         pump_monitor_destroy(&pump_monitor);
     }
 }
