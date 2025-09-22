@@ -11,5 +11,12 @@ typedef struct
 }tank_monitor_task_config_t;
 // note when calling the tank_monitor_task_config_t in main make sure it is a gobal variable
 
+typedef struct 
+{
+    int tank_monitor_id;
+    int tank_monitor_event;
+}tank_monitor_event_handler_t;
+
+
 void tank_monitor_task(void* pvParameter);
 #endif
