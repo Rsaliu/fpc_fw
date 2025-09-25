@@ -14,11 +14,12 @@
 #include "acs712_current_sensor.h"
 #include "ads1115.h"
 #include "current_sensor_context.h"
+#include "event.h"
 
 typedef struct
 {
     int pump_monitor_id;
-    int pump_monitor_event;
+    event_type_t event;
 }pump_monitor_event_handler_t;
 
 
