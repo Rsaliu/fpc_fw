@@ -8,14 +8,14 @@
 typedef struct 
 {
       tank_monitor_t** tank_monitor;
-    size_t tank_monitor_count;
+     size_t tank_monitor_count;
 }tank_monitor_task_config_t;
 // note when calling the tank_monitor_task_config_t in main make sure it is a gobal variable
 
 typedef struct 
 {
     int tank_monitor_id;
-    int tank_monitor_event;
+    event_type_t event;
 }tank_monitor_event_handler_t;
 
 
