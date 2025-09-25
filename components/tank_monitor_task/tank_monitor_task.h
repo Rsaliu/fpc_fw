@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <tank_monitor.h>
+#include "event.h"
 
 typedef struct 
 {

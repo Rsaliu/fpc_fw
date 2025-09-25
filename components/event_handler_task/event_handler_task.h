@@ -3,8 +3,11 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <event.h>
+#include "event.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
+extern QueueHandle_t event_queue;
 typedef struct 
 {
    event_type_t event;
