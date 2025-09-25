@@ -1,8 +1,12 @@
 #include "pump_monitor_task.h"
 #include "constant.h"
 #include "esp_log.h"
+#include "freertos/queue.h"
+#include "event_handler_task.h"
 
 static const char *TAG = "PUMP_MONITOR_TASK";
+
+
 
 typedef struct
 {
@@ -31,6 +35,7 @@ static void pump_monitor_task(void *pvParameters)
     pump_monitor_task_params_t *params = (pump_monitor_task_params_t *)pvParameters;
     task_objects_t objects = {0};
     int cs_id = params->current_sensor_id;
+    
 
     // Create pump
     cJSON *pump_json = params->pump_config;
@@ -203,6 +208,10 @@ static void pump_monitor_task(void *pvParameters)
     }
 
     // Monitoring loop
+    pump_monitor_event_handler_t pump_event = {
+        .pump_monitor_id = 1,
+        .event = EVENT_PUMP_NORMAL
+    };
     ESP_LOGI(TAG, "Pump monitor task started for PM ID %d (Pump ID %d, CS ID %d)",
              params->pm_id, params->pump_id, params->current_sensor_id);
     while (1)
@@ -212,6 +221,11 @@ static void pump_monitor_task(void *pvParameters)
         {
             ESP_LOGE(TAG, "Failed to check current for pump monitor ID %d", params->pm_id);
         }
+
+        if(xQueueSend(event_queue, &pump_event, (TickType_t)0) == pdPASS){
+            ESP_LOGI(TAG, " pump id: %d successfully send a queue", pump_event.pump_monitor_id);
+        }
+
         vTaskDelay(pdMS_TO_TICKS(1000)); // Check every 1 second
     }
 }
