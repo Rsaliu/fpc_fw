@@ -70,7 +70,7 @@ void app_main(void)
     printf("Hello world!\n");
     
 
-    tank_config_t tank_config1 = {.id = 1, .capacity_in_liters= 36, 
+        tank_config_t tank_config1 = {.id = 1, .capacity_in_liters= 36, 
         .shape = TANK_SHAPE_RECTANGLE, .height_in_cm = 28,
         .full_level_in_mm =70, .low_level_in_mm = 50 }; 
 
@@ -130,18 +130,11 @@ void app_main(void)
     ESP_LOGI(TAG, "Free heap: %u bytes", (unsigned)esp_get_free_heap_size());
 
     TaskHandle_t task_handle;
-
-     event_queue = xQueueCreate(10, sizeof(event_handler_t));
-    if (event_queue == NULL)
-    {
-        ESP_LOGE(EVENT_TAG, "failed to create event handler queue\n");
-    }
-
-
+    queue_handler_wrapper_init();
     xTaskCreate(&event_handler_task, "event_handler_task", 4096,NULL,1,NULL); 
     xTaskCreate(&tank_monitor_task,"tank_monitor_task",4096, &tank_monitor_task_config,1,NULL);
 
-     esp_err_t err = start_pump_monitor_task(json_config, strlen(json_config), &task_handle);
+         esp_err_t err = start_pump_monitor_task(json_config, strlen(json_config), &task_handle);
     if (err != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to start pump monitor task");
