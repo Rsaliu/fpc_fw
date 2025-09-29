@@ -2,7 +2,7 @@
 #include "constant.h"
 #include "esp_log.h"
 #include "freertos/queue.h"
-#include "event_handler_task.h"
+#include "queue_handler_wrapper.h"
 
 static const char *TAG = "PUMP_MONITOR_TASK";
 
@@ -208,10 +208,12 @@ static void pump_monitor_task(void *pvParameters)
     }
 
     // Monitoring loop
-    pump_monitor_event_handler_t pump_event = {
-        .pump_monitor_id = 1,
+
+    monitor_event_queue_t pump_event = {
+        .monitors_id = 1,
         .event = EVENT_PUMP_NORMAL
     };
+   
     ESP_LOGI(TAG, "Pump monitor task started for PM ID %d (Pump ID %d, CS ID %d)",
              params->pm_id, params->pump_id, params->current_sensor_id);
     while (1)
@@ -222,9 +224,12 @@ static void pump_monitor_task(void *pvParameters)
             ESP_LOGE(TAG, "Failed to check current for pump monitor ID %d", params->pm_id);
         }
 
-        if(xQueueSend(event_queue, &pump_event, (TickType_t)0) == pdPASS){
-            ESP_LOGI(TAG, " pump id: %d successfully send a queue", pump_event.pump_monitor_id);
+         err = queue_handler_wrapper_send(&pump_event);
+        if (err != SYSTEM_OK)
+        {
+            ESP_LOGE(TAG, "failed to send pump monitor event\n.");
         }
+        
 
         vTaskDelay(pdMS_TO_TICKS(1000)); // Check every 1 second
     }

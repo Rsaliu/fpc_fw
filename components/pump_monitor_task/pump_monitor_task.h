@@ -14,14 +14,6 @@
 #include "acs712_current_sensor.h"
 #include "ads1115.h"
 #include "current_sensor_context.h"
-#include "event.h"
-
-typedef struct
-{
-    int pump_monitor_id;
-    event_type_t event;
-}pump_monitor_event_handler_t;
-
 
 
 esp_err_t start_pump_monitor_task(const char *json_str, size_t json_size, TaskHandle_t *task_handle);
