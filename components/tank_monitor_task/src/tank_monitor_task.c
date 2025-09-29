@@ -4,24 +4,24 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_log.h"
-#include "event_handler_task.h"
+
 
 static const char*TAG = "TANK_MONITOR_TASK";
 
 void tank_monitor_task(void* pvParameter){
    tank_monitor_task_config_t* config = (tank_monitor_task_config_t*) pvParameter;
 
-   tank_monitor_event_handler_t monitor_event = {
-        .tank_monitor_id =2,
-        .event = EVENT_TANK_NORMAL_STATE
-   };
-   
-   
    if (config == NULL ||config->tank_monitor == NULL)
    {
       ESP_LOGE(TAG, "Invalide config or invalide tank monitor array");
       exit(1);
    }
+
+     monitor_event_queue_t tank_monitor_event = {
+     .monitors_id = 1,
+     .event = EVENT_TANK_NORMAL_STATE
+
+   };
    
    ESP_LOGI(TAG,"entering the task monitor loop......\n");
    while (1)
@@ -32,15 +32,15 @@ void tank_monitor_task(void* pvParameter){
                 ESP_LOGW(TAG, "Monitor[%d] is NULL", i);
             }
             ESP_LOGI(TAG, "number of monitor[%d]\n", i);
-           tank_monitor_check_level(config->tank_monitor[i]);  
+           tank_monitor_check_level(config->tank_monitor[i]);
+
+           error_type_t err = queue_handler_wrapper_send(&tank_monitor_event);
            
-           
-           if (xQueueSend(event_queue, &monitor_event,(TickType_t)0) == pdPASS)
+           if ( err != SYSTEM_OK)
            {
-                ESP_LOGI(TAG, "sucessfully send tank monitor queue\n.");
+               ESP_LOGE(TAG, "failed to send tank monitor event\n.");
            }
            
-
       }
       vTaskDelay(pdMS_TO_TICKS(1000));  
   }

@@ -3,20 +3,18 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <tank_monitor.h>
-#include "event.h"
+#include "queue_handler_wrapper.h"
+#include "common_headers.h"
+
 
 typedef struct 
 {
-      tank_monitor_t** tank_monitor;
+     tank_monitor_t** tank_monitor;
      size_t tank_monitor_count;
 }tank_monitor_task_config_t;
 // note when calling the tank_monitor_task_config_t in main make sure it is a gobal variable
 
-typedef struct 
-{
-    int tank_monitor_id;
-    event_type_t event;
-}tank_monitor_event_handler_t;
+
 
 
 void tank_monitor_task(void* pvParameter);
