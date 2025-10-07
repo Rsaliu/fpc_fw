@@ -1,0 +1,111 @@
+#include "webserver_task.h"
+#include "esp_log.h"
+
+static const char *TAG = "WEBSERVER_TASK";
+
+static SemaphoreHandle_t start_sem = NULL;
+static SemaphoreHandle_t stop_sem = NULL;
+
+// Global webserver instance (static to avoid global exposure)
+static webserver_t *webserver = NULL;
+
+// Webserver task function
+static void webserver_task(void *pvParameters) {
+    for (;;) {
+        // Wait for button press signal
+        if (xSemaphoreTake(start_sem, portMAX_DELAY) == pdTRUE) {
+            ESP_LOGI(TAG, "Starting webserver on button press");
+
+            // Initialize webserver
+            error_type_t err = webserver_init(webserver);
+            if (err != SYSTEM_OK) {
+                ESP_LOGE(TAG, "Webserver init failed: %d", err);
+                continue;
+            }
+
+            // Start webserver
+            err = webserver_start(webserver);
+            if (err != SYSTEM_OK) {
+                ESP_LOGE(TAG, "Webserver start failed: %d", err);
+                webserver_deinit(webserver);
+                continue;
+            }
+
+            // Wait for button release signal
+            if (xSemaphoreTake(stop_sem, portMAX_DELAY) == pdTRUE) {
+                ESP_LOGI(TAG, "Stopping webserver on button release");
+
+                // Stop webserver
+                err = webserver_stop(webserver);
+                if (err != SYSTEM_OK) {
+                    ESP_LOGE(TAG, "Webserver stop failed: %d", err);
+                }
+
+                // Deinitialize webserver
+                err = webserver_deinit(webserver);
+                if (err != SYSTEM_OK) {
+                    ESP_LOGE(TAG, "Webserver deinit failed: %d", err);
+                }
+            }
+        }
+    }
+
+    // Cleanup (unreachable due to infinite loop, but good practice)
+    webserver_destroy(&webserver);
+    vTaskDelete(NULL);
+}
+
+esp_err_t webserver_task_init(webserver_task_config_t *config) {
+    if (config == NULL) {
+        ESP_LOGE(TAG, "Null configuration provided");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    // Create semaphores
+    start_sem = xSemaphoreCreateBinary();
+    stop_sem = xSemaphoreCreateBinary();
+    if (start_sem == NULL || stop_sem == NULL) {
+        ESP_LOGE(TAG, "Failed to create semaphores");
+        return ESP_FAIL;
+    }
+
+    // Create webserver instance
+    webserver = webserver_create(&config->webserver_config);
+    if (webserver == NULL) {
+        ESP_LOGE(TAG, "Failed to create webserver instance");
+        vSemaphoreDelete(start_sem);
+        vSemaphoreDelete(stop_sem);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "Webserver task initialized successfully");
+    return ESP_OK;
+}
+
+esp_err_t webserver_task_start(void) {
+    if (webserver == NULL) {
+        ESP_LOGE(TAG, "Webserver not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    BaseType_t result = xTaskCreate(webserver_task, "webserver_task", 4096, NULL, 5, NULL);
+    if (result != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create webserver task");
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "Webserver task started successfully");
+    return ESP_OK;
+}
+
+void webserver_task_signal_start(void) {
+    if (start_sem != NULL) {
+        xSemaphoreGive(start_sem);
+    }
+}
+
+void webserver_task_signal_stop(void) {
+    if (stop_sem != NULL) {
+        xSemaphoreGive(stop_sem);
+    }
+}
