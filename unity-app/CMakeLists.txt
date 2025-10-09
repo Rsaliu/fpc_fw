@@ -10,4 +10,4 @@ set(EXTRA_COMPONENT_DIRS "../components" "../third_party/esp-protocols/component
 set(TEST_COMPONENTS "pump tank tank_monitor pump_control_unit relay_driver rs485 level_sensor crc protocol current_sensor wifi_hotspot webserver config_manager pump_monitor setup_config")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(example_test_app)
+project(example_test_app )
