@@ -72,7 +72,7 @@ typedef struct
 
 }pump_control_unit_t;
 
-pump_control_unit_t deserilalized_pump_control_unit(const char* json_str);
+error_type_t deserilalized_pump_control_unit(pump_control_unit_t* unit,const char* json_str);
 error_type_t setup_config_tank(pump_control_unit_t* pump_control_obj);
 error_type_t setup_config_pump(pump_control_unit_t* pump_control_obj);
 error_type_t setup_config_tank_monitor(pump_control_unit_t* pump_control_obj);

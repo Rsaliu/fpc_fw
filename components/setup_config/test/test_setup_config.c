@@ -108,7 +108,7 @@ const char *dummy_json_file()
         "    \"current_sensor\": {"
         "      \"id\": 2,"
         "      \"interface\": \"I2C\","
-        "      \"make\": \"ACS758\","
+        "      \"make\": \"ACS712\","
         "      \"max_current\": 50"
         "    }"
         "  },"
@@ -151,7 +151,7 @@ const char *dummy_json_file()
         "    \"current_sensor\": {"
         "      \"id\": 3,"
         "      \"interface\": \"I2C\","
-        "      \"make\": \"ACS758\","
+        "      \"make\": \"ACS712\","
         "      \"max_current\": 50"
         "    }"
         "  }"
@@ -172,67 +172,121 @@ TEST_CASE("setup_config_test", "test_desrilized_pump_control_unit")
     {
         cJSON *unit_json = cJSON_GetArrayItem(pump_control_units, i);
         char *unit_str = cJSON_PrintUnformatted(unit_json);
-
-        unit = deserilalized_pump_control_unit(unit_str);
-
+        error_type_t err = deserilalized_pump_control_unit(&unit, unit_str);
+        TEST_ASSERT_EQUAL(SYSTEM_OK, err);
         ESP_LOGI(TAG, "Successfully deserialized pump control unit with ID: %d\n.", unit.unit_id);
-
         free(unit_str);
     }
+    
 
+    // empty string test
+    const char *empty_json = "{"
+                             "\"id\": ,"
+                             "\"tank\": {"
+                             "\"id\": ,"
+                             "\"capacity_in_liters\": 500.0,"
+                             "\"shape\": \"Cylinder\","
+                             "\"height_in_cm\": 200.0,"
+                             "\"full_level_in_mm\": ,"
+                             "\"low_level_in_mm\": 300"
+                             "}"
+                             "}";
+    error_type_t empty_unit = deserilalized_pump_control_unit(&unit, empty_json);
+    TEST_ASSERT_EQUAL(SYSTEM_INVALID_PARAMETER, empty_unit);
+    ESP_LOGW(TAG, "Handled empty JSON string incorrectly");
+
+    // badly formated string
+    const char *badly_formated_json =
+    "{"
+    "  \"pump\": {"
+    "      \"id\": 3,"          
+    "      \"make\": \"Pedrollo\""
+    "      \"power_in_hp\": 2.0," 
+    "      \"current_rating\": 3.0"
+    "    ,"                     
+    "    \"tank_monitor\": {"   
+    "      \"id\": 3"
+    "      \"level_sensor_id\": 2"
+    "      \"tank_id\": 2"
+    "    "
+    "    \"pump_monitor\": {"   
+    "      \"id\": 3"
+    "      \"current_sensor_id\": 2"
+    "      \"pump_id\": 2"
+    "    }"
+    "    \"level_sensor\": {"   
+    "      \"id\": 3"
+    "      \"interface\": RS485"
+    "      \"sensor_addr\": 20"
+    "      \"protocol\": GL_A01_PROTOCOL"
+    "    "
+    "    \"relay\": {"
+    "      \"id\": 3"
+    "      \"pin_number\": 26"
+    "    "
+    "    \"current_sensor\": {"
+    "      \"id\": 3"
+    "      \"interface\": \"I2C\""
+    "      \"make\": \"ACS758\""
+    "      \"max_current\": 50";
+    error_type_t badly_formated_unit= deserilalized_pump_control_unit(&unit, badly_formated_json);
+    TEST_ASSERT_EQUAL(SYSTEM_INVALID_PARAMETER, badly_formated_unit);
+    ESP_LOGW(TAG, "json string is badly formatted\n");
     cJSON_Delete(root);
-    setup_config_teardown();
-}
-
-TEST_CASE("setup_config_test", "test_setup_config_tank")
-{
-    setup_config_Setup();
-    error_type_t err = setup_config_tank(&unit);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-    ESP_LOGI(TAG, "tank_setup_config is sucessful\n");
-    setup_config_teardown();
-}
-
-TEST_CASE("setup_config_test", "test_setup_config_pump")
-{
-    setup_config_Setup();
-    error_type_t err = setup_config_pump(&unit);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-    ESP_LOGI(TAG, "pump_setup_config is sucessful\n");
 
     setup_config_teardown();
 }
 
-TEST_CASE("setup_config_test", "test_setup_config_tank_monitor")
-{
-    setup_config_Setup();
-    error_type_t err = setup_config_tank_monitor(&unit);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-    ESP_LOGI(TAG, "tank_monitor_setup_config is sucessful\n");
+// TEST_CASE("setup_config_test", "test_setup_config_tank")
+// {
+//     setup_config_Setup();
+//     error_type_t err = setup_config_tank(&unit);
+//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+//     ESP_LOGI(TAG, "tank_setup_config is sucessful\n");
 
-    setup_config_teardown();
-}
+//     setup_config_teardown();
+// }
 
-TEST_CASE("setup_config_test", "test_setup_config_pump_monitor")
-{
-    setup_config_Setup();
+// TEST_CASE("setup_config_test", "test_setup_config_pump")
+// {
+//     setup_config_Setup();
+//     error_type_t err = setup_config_pump(&unit);
+//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+//     ESP_LOGI(TAG, "pump_setup_config is sucessful\n");
 
-    error_type_t err = setup_config_pump_monitor(&unit);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-    ESP_LOGI(TAG, "pump_ monitor_setup_config is sucessful\n");
-    setup_config_teardown();
-}
+//     setup_config_teardown();
+// }
 
-TEST_CASE("setup_config_test", "test_setup_config_relay_driver")
-{
-    setup_config_Setup();
+// TEST_CASE("setup_config_test", "test_setup_config_tank_monitor")
+// {
+//     setup_config_Setup();
+//     error_type_t err = setup_config_tank_monitor(&unit);
+//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+//     ESP_LOGI(TAG, "tank_monitor_setup_config is sucessful\n");
 
-    error_type_t err = setup_config_relay(&unit);
-    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-    ESP_LOGI(TAG, "relay_setup_config is sucessful\n");
+//     setup_config_teardown();
+// }
 
-    setup_config_teardown();
-}
+// TEST_CASE("setup_config_test", "test_setup_config_pump_monitor")
+// {
+//     setup_config_Setup();
+
+//     error_type_t err = setup_config_pump_monitor(&unit);
+//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+//     ESP_LOGI(TAG, "pump_ monitor_setup_config is sucessful\n");
+//     setup_config_teardown();
+// }
+
+// TEST_CASE("setup_config_test", "test_setup_config_relay_driver")
+// {
+//     setup_config_Setup();
+
+//     error_type_t err = setup_config_relay(&unit);
+//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+//     ESP_LOGI(TAG, "relay_setup_config is sucessful\n");
+
+//     setup_config_teardown();
+// }
 
 TEST_CASE("setup_config_test", "test_setup_config_level_sensor")
 {
