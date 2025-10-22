@@ -486,18 +486,6 @@ static error_type_t set_current_sensor_interface_to_string(const char *current_s
     {
         config->context = (void**)adc1115_obj;
     }
-    else if (strcmp("SPI", current_sensor_interface_str) == 0)
-    {
-        config->context = (void**)adc1115_obj;
-    }
-    else if (strcmp("PWM", current_sensor_interface_str) == 0)
-    {
-        config->context = (void**)adc1115_obj;
-    }
-    else if (strcmp("ANALOG_VOLTAGE", current_sensor_interface_str) == 0)
-    {
-        config->context = (void**)adc1115_obj;
-    }
     else
     {
         ESP_LOGE(TAG, "unknown current sensor interface");
