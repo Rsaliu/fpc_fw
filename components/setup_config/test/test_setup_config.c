@@ -193,7 +193,7 @@ TEST_CASE("setup_config_test", "test_desrilized_pump_control_unit")
                              "}";
     error_type_t empty_unit = deserilalized_pump_control_unit(&unit, empty_json);
     TEST_ASSERT_EQUAL(SYSTEM_INVALID_PARAMETER, empty_unit);
-    ESP_LOGW(TAG, "Handled empty JSON string incorrectly");
+    ESP_LOGE(TAG, "Handled empty JSON string incorrectly");
 
     // badly formated string
     const char *badly_formated_json =
@@ -231,62 +231,62 @@ TEST_CASE("setup_config_test", "test_desrilized_pump_control_unit")
     "      \"max_current\": 50";
     error_type_t badly_formated_unit= deserilalized_pump_control_unit(&unit, badly_formated_json);
     TEST_ASSERT_EQUAL(SYSTEM_INVALID_PARAMETER, badly_formated_unit);
-    ESP_LOGW(TAG, "json string is badly formatted\n");
+    ESP_LOGE(TAG, "json string is badly formatted\n");
     cJSON_Delete(root);
 
     setup_config_teardown();
 }
 
-// TEST_CASE("setup_config_test", "test_setup_config_tank")
-// {
-//     setup_config_Setup();
-//     error_type_t err = setup_config_tank(&unit);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-//     ESP_LOGI(TAG, "tank_setup_config is sucessful\n");
+TEST_CASE("setup_config_test", "test_setup_config_tank")
+{
+    setup_config_Setup();
+    error_type_t err = setup_config_tank(&unit);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+    ESP_LOGI(TAG, "tank_setup_config is sucessful\n");
 
-//     setup_config_teardown();
-// }
+    setup_config_teardown();
+}
 
-// TEST_CASE("setup_config_test", "test_setup_config_pump")
-// {
-//     setup_config_Setup();
-//     error_type_t err = setup_config_pump(&unit);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-//     ESP_LOGI(TAG, "pump_setup_config is sucessful\n");
+TEST_CASE("setup_config_test", "test_setup_config_pump")
+{
+    setup_config_Setup();
+    error_type_t err = setup_config_pump(&unit);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+    ESP_LOGI(TAG, "pump_setup_config is sucessful\n");
 
-//     setup_config_teardown();
-// }
+    setup_config_teardown();
+}
 
-// TEST_CASE("setup_config_test", "test_setup_config_tank_monitor")
-// {
-//     setup_config_Setup();
-//     error_type_t err = setup_config_tank_monitor(&unit);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-//     ESP_LOGI(TAG, "tank_monitor_setup_config is sucessful\n");
+TEST_CASE("setup_config_test", "test_setup_config_tank_monitor")
+{
+    setup_config_Setup();
+    error_type_t err = setup_config_tank_monitor(&unit);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+    ESP_LOGI(TAG, "tank_monitor_setup_config is sucessful\n");
 
-//     setup_config_teardown();
-// }
+    setup_config_teardown();
+}
 
-// TEST_CASE("setup_config_test", "test_setup_config_pump_monitor")
-// {
-//     setup_config_Setup();
+TEST_CASE("setup_config_test", "test_setup_config_pump_monitor")
+{
+    setup_config_Setup();
 
-//     error_type_t err = setup_config_pump_monitor(&unit);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-//     ESP_LOGI(TAG, "pump_ monitor_setup_config is sucessful\n");
-//     setup_config_teardown();
-// }
+    error_type_t err = setup_config_pump_monitor(&unit);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+    ESP_LOGI(TAG, "pump_ monitor_setup_config is sucessful\n");
+    setup_config_teardown();
+}
 
-// TEST_CASE("setup_config_test", "test_setup_config_relay_driver")
-// {
-//     setup_config_Setup();
+TEST_CASE("setup_config_test", "test_setup_config_relay_driver")
+{
+    setup_config_Setup();
 
-//     error_type_t err = setup_config_relay(&unit);
-//     TEST_ASSERT_EQUAL(SYSTEM_OK, err);
-//     ESP_LOGI(TAG, "relay_setup_config is sucessful\n");
+    error_type_t err = setup_config_relay(&unit);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, err);
+    ESP_LOGI(TAG, "relay_setup_config is sucessful\n");
 
-//     setup_config_teardown();
-// }
+    setup_config_teardown();
+}
 
 TEST_CASE("setup_config_test", "test_setup_config_level_sensor")
 {

@@ -9,19 +9,19 @@
 #include <current_sensor.h>
 #include <protocol.h>
 #include <rs485.h>
-#include <acs712_current_sensor.h>
+#include <ads1115.h>
 #include "esp_log.h"
 
 static const char *TAG = "SETUP_CONFIG";
 rs485_t *rs485Obj;
-acs712_sensor_t *acs712_obj;
+ads1115_t*adc1115_obj;
 
 error_type_t deserilalized_pump_control_unit(pump_control_unit_t *unit, const char *json_str)
 {
     cJSON *root = cJSON_Parse(json_str);
     if (!root)
     {
-        ESP_LOGW(TAG, "failed to parse json string\n.");
+        ESP_LOGE(TAG, "failed to parse json string\n.");
         return SYSTEM_INVALID_PARAMETER;
     }
 
@@ -29,7 +29,7 @@ error_type_t deserilalized_pump_control_unit(pump_control_unit_t *unit, const ch
     cJSON *id = cJSON_GetObjectItem(root, "id");
     if (!id || !cJSON_IsNumber(id))
     {
-        ESP_LOGW(TAG, "unit id is empty/null or invalid int\n.");
+        ESP_LOGE(TAG, "unit id is empty/null or invalid int\n.");
         cJSON_Delete(root);
         return SYSTEM_INVALID_PARAMETER;
     }
@@ -271,8 +271,7 @@ error_type_t deserilalized_pump_control_unit(pump_control_unit_t *unit, const ch
         return SYSTEM_INVALID_PARAMETER;
     }
     unit->current_sensor.current_sensor_make = make->valuestring;
-    ESP_LOGI(TAG, "Deleting root at address: %p", root);
-    //cJSON_Delete(root);
+     //cJSON_Delete(root);
     return SYSTEM_OK;
 }
 
@@ -371,6 +370,7 @@ error_type_t setup_config_pump_monitor(pump_control_unit_t *pump_control_obj)
     if (!sensor_obj)
     {
         ESP_LOGE(TAG, "invalid sensor obj\n.");
+        return SYSTEM_INVALID_PARAMETER;
     }
 
     pump_config_t pump = {
@@ -379,6 +379,7 @@ error_type_t setup_config_pump_monitor(pump_control_unit_t *pump_control_obj)
     if (!pump_obj)
     {
         ESP_LOGE(TAG, "invalid pump object\n.");
+        return SYSTEM_INVALID_PARAMETER;
     }
 
     pump_monitor_config_t pump_monitor_config = {
@@ -429,7 +430,7 @@ static error_type_t set_level_sensor_interface_to_string(const char *config_str,
     }
     else
     {
-        ESP_LOGW(TAG, "Unknow interface");
+        ESP_LOGE(TAG, "Unknow interface");
         return SYSTEM_INVALID_PARAMETER;
     }
     return SYSTEM_OK;
@@ -443,7 +444,7 @@ static error_type_t set_level_sensor_protocol_to_string(const char *protocol_str
     }
     else
     {
-        ESP_LOGW(TAG, "Unknow protocol");
+        ESP_LOGE(TAG, "Unknow protocol");
         return SYSTEM_INVALID_PARAMETER;
     }
     return SYSTEM_OK;
@@ -457,8 +458,18 @@ error_type_t setup_config_level_sensor(pump_control_unit_t *pump_control_obj)
         .sensor_addr = pump_control_obj->level_sensor.sensor_addr,
         .protocol = NULL,
     };
-    set_level_sensor_interface_to_string(pump_control_obj->level_sensor.interface, &level_sensor_config);
-    set_level_sensor_protocol_to_string(pump_control_obj->level_sensor.protocol, &level_sensor_config);
+    error_type_t err = set_level_sensor_interface_to_string(pump_control_obj->level_sensor.interface, &level_sensor_config);
+    if (!err)
+    {
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    
+    err = set_level_sensor_protocol_to_string(pump_control_obj->level_sensor.protocol, &level_sensor_config);
+    if (!err)
+    {
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    
     level_sensor_t *level_sensor = level_sensor_create(level_sensor_config);
     if (!level_sensor)
     {
@@ -473,23 +484,24 @@ static error_type_t set_current_sensor_interface_to_string(const char *current_s
 {
     if (strcmp("I2C", current_sensor_interface_str) == 0)
     {
-        config->context = (void **)acs712_obj;
+        config->context = (void**)adc1115_obj;
     }
     else if (strcmp("SPI", current_sensor_interface_str) == 0)
     {
-        config->context = (void **)acs712_obj;
+        config->context = (void**)adc1115_obj;
     }
     else if (strcmp("PWM", current_sensor_interface_str) == 0)
     {
-        config->context = (void **)acs712_obj;
+        config->context = (void**)adc1115_obj;
     }
     else if (strcmp("ANALOG_VOLTAGE", current_sensor_interface_str) == 0)
     {
-        config->context = (void **)acs712_obj;
+        config->context = (void**)adc1115_obj;
     }
     else
     {
         ESP_LOGE(TAG, "unknown current sensor interface");
+        return SYSTEM_INVALID_PARAMETER;
     }
     return SYSTEM_OK;
 }
