@@ -6,7 +6,7 @@
 #include "freertos/task.h"
 #include <common_headers.h>
 
-typedef void(*websever_task_t)(void*pvParameter);
+typedef void(*websever_task_t)(void);
 typedef void(*task_handler_t)(void);
 
 typedef struct 

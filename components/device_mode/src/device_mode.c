@@ -5,7 +5,7 @@
 #include "driver/gpio.h"
 #include "esp_intr_types.h"
 #include "esp_log.h"
-#include "example.h"
+
 
 static const char*BUTTON_TAG = "SETUP_CONFIG_BUTTON";
 
@@ -25,7 +25,7 @@ error_type_t device_mode_event(device_mode_config_t*config){
     {
         ESP_LOGI(BUTTON_TAG, "button pressed: start webserver\n.");
         config->webserver();
-        //xTaskCreate(config->webserver, "websever_task",4096,NULL,1,NULL);
+        
         
     }else
     {
@@ -38,7 +38,7 @@ error_type_t device_mode_event(device_mode_config_t*config){
     return SYSTEM_OK;
 }
 
-void setup_config_button_init(device_mode_config_t* config){
+void device_mode_init(device_mode_config_t* config){
     gpio_config_t  io_config = {};
     io_config.intr_type = GPIO_INTR_ANYEDGE;
     io_config.mode = GPIO_MODE_INPUT;
