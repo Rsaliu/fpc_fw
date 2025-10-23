@@ -7,6 +7,7 @@
 current_sensor_t* current_sensor = NULL;
 static const char* TAG = "CURRENT_SENSOR";
 
+
 error_type_t dummy_read_current(void* context, float* current_value) {
     // Dummy function to simulate reading current
     // In a real scenario, this would read from the actual sensor hardware
