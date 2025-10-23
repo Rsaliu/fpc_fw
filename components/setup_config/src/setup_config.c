@@ -501,7 +501,12 @@ error_type_t setup_config_current_sensor(pump_control_unit_t *pump_control_obj)
         .context = (void **)NULL,
         .make = pump_control_obj->current_sensor.current_sensor_make,
         .max_current = pump_control_obj->current_sensor.max_current};
-    set_current_sensor_interface_to_string(pump_control_obj->current_sensor.interface, &current_sensor_config);
+    error_type_t err = set_current_sensor_interface_to_string(pump_control_obj->current_sensor.interface, &current_sensor_config);
+    if (!err)
+    {
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    
     current_sensor_t *current_sensor = current_sensor_create(&current_sensor_config);
     if (!current_sensor)
     {
