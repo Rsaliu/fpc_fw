@@ -56,31 +56,6 @@ void file_deinit(void)
     ESP_LOGI(TAG, "SPIFFS unmounted");
 }
 
-// esp_err_t file_write(const char *path, const char *data, size_t *size)
-// {
-//     if (path == NULL || data == NULL || len == 0) {
-//         ESP_LOGE(TAG, "Invalid params for write: %s (len=%zu)", path ? path : "NULL", len);
-//         return ESP_FAIL;
-//     }
-
-//     FILE *f = fopen(path, "w");
-//     if (f == NULL) {
-//         ESP_LOGE(TAG, "Failed to open file for writing: %s", path);
-//         return ESP_FAIL;
-//     }
-
-//     size_t written = fwrite(data, 1, len, f);  
-//     if (written != len) {
-//         ESP_LOGE(TAG, "Incomplete write to %s: %zu/%zu bytes", path, written, len);
-//         fclose(f);
-//         return ESP_FAIL;
-//     }
-
-//     fclose(f);
-//     ESP_LOGI(TAG, "File written: %s (%zu bytes)", path, len);
-//     return ESP_OK;
-
-// }
 
 esp_err_t file_write(const char *path, const char *data, size_t size)
 {
@@ -107,21 +82,6 @@ esp_err_t file_write(const char *path, const char *data, size_t size)
     ESP_LOGI(TAG, "File written: %s (%zu bytes)", path, size);
     return ESP_OK;
 }
-// esp_err_t file_append(const char *path, const char *data, size_t *size);
-// esp_err_t file_append(const char *path, const char *data)
-// {
-//     FILE *f = fopen(path, "a");
-//     if (f == NULL)
-//     {
-//         ESP_LOGE(TAG, "Failed to open file for appending: %s", path);
-//         return ESP_FAIL;
-//     }
-
-//     fprintf(f, "%s", data);
-//     fclose(f);
-//     ESP_LOGI(TAG, "Data appended to: %s", path);
-//     return ESP_OK;
-// }
 
 esp_err_t file_append(const char *path, const char *data, size_t size)
 {
@@ -149,39 +109,10 @@ esp_err_t file_append(const char *path, const char *data, size_t size)
     return ESP_OK;
 }
 
-// esp_err_t file_read(const char *path, char **buffer, size_t *size)
-// {
-//     FILE *f = fopen(path, "r");
-//     if (f == NULL)
-//     {
-//         ESP_LOGE(TAG, "Failed to open file: %s", path);
-//         return ESP_FAIL;
-//     }
-
-//     fseek(f, 0, SEEK_END);
-//     *size = ftell(f);
-//     fseek(f, 0, SEEK_SET);
-
-//     *buffer = (char *)malloc(*size + 1);
-//     if (*buffer == NULL)
-//     {
-//         ESP_LOGE(TAG, "Memory allocation failed");
-//         fclose(f);
-//         return ESP_ERR_NO_MEM;
-//     }
-
-//     size_t read_size = fread(*buffer, 1, *size, f);
-//     (*buffer)[read_size] = '\0';
-//     fclose(f);
-
-//     ESP_LOGI(TAG, "File read: %s (%zu bytes)", path, *size);
-//     return ESP_OK;
-// }
-
-esp_err_t file_read(const char *path, char **buffer, size_t *size)
+esp_err_t file_read(const char *path, char *buffer, size_t max_size, size_t *read_size)
 {
-    if (path == NULL || buffer == NULL || size == NULL) {
-        ESP_LOGE(TAG, "Invalid params for read: %s", path ? path : "NULL");
+    if (path == NULL || buffer == NULL || max_size == 0 || read_size == NULL) {
+        ESP_LOGE(TAG, "Invalid params for read: %s (max_size=%zu)", path ? path : "NULL", max_size);
         return ESP_FAIL;
     }
 
@@ -191,38 +122,37 @@ esp_err_t file_read(const char *path, char **buffer, size_t *size)
         return ESP_FAIL;
     }
 
+    // Get file size
     fseek(f, 0, SEEK_END);
-    *size = ftell(f);
+    size_t file_size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    if (*size == 0) {  // Handle empty files
+    if (file_size == 0) {  // Empty file
         fclose(f);
-        *buffer = NULL;
-        *size = 0;
+        *buffer = '\0';  // Null-terminate empty buffer
+        *read_size = 0;
         ESP_LOGI(TAG, "Empty file read: %s", path);
         return ESP_OK;
     }
 
-    *buffer = (char *)malloc(*size + 1);  // +1 for null terminator
-    if (*buffer == NULL) {
-        ESP_LOGE(TAG, "Memory allocation failed for %zu bytes", *size + 1);
-        fclose(f);
-        return ESP_ERR_NO_MEM;
-    }
+    // Cap read size to available buffer space (leave room for null-terminator)
+    size_t to_read = (file_size < max_size - 1) ? file_size : max_size - 1;
+    size_t actual_read = fread(buffer, 1, to_read, f);
 
-    size_t read_size = fread(*buffer, 1, *size, f);
-    if (read_size != *size) {
-        ESP_LOGE(TAG, "Incomplete read from %s: %zu/%zu bytes", path, read_size, *size);
-        free(*buffer);  // Clean up on partial read
-        *buffer = NULL;
+    if (actual_read != to_read) {
+        ESP_LOGE(TAG, "Incomplete read from %s: %zu/%zu bytes", path, actual_read, to_read);
         fclose(f);
         return ESP_FAIL;
     }
 
-    (*buffer)[*size] = '\0';  // Null-terminate for string safety
+    buffer[actual_read] = '\0';  // Null-terminate
+    *read_size = actual_read;
     fclose(f);
 
-    ESP_LOGI(TAG, "File read: %s (%zu bytes)", path, *size);
+    ESP_LOGI(TAG, "File read: %s (%zu bytes)", path, actual_read);
+    if (file_size > max_size - 1) {
+        ESP_LOGW(TAG, "File %s truncated: %zu/%zu bytes read", path, actual_read, file_size);
+    }
     return ESP_OK;
 }
 
@@ -248,24 +178,6 @@ esp_err_t file_delete(const char *path)
     ESP_LOGI(TAG, "File deleted: %s", path);
     return ESP_OK;
 }
-
-// void file_list_files(void)
-// {
-//     DIR *dir = opendir("/spiffs");
-//     if (dir == NULL)
-//     {
-//         ESP_LOGE(TAG, "Failed to open /spiffs directory");
-//         return;
-//     }
-
-//     struct dirent *entry;
-//     ESP_LOGI(TAG, "Files in SPIFFS:");
-//     while ((entry = readdir(dir)) != NULL)
-//     {
-//         ESP_LOGI(TAG, "  %s", entry->d_name);
-//     }
-//     closedir(dir);
-// }
 
 void file_list_files(const char *path)
 {
