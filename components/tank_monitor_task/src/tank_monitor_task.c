@@ -9,7 +9,7 @@
 static const char *TAG = "TANK_MONITOR_TASK";
 
 tank_state_machine_state_t tank_state_machine_state = TANK_STATE_MACHINE_NORMAL_STATE;
-static void event_callback(void *context, int actuator_id, event_type_t event, int monitor_id)
+static void tank_event_callback(void *context, int actuator_id, event_type_t event, int monitor_id)
 {
   // Example callback function for tank monitor events
   ESP_LOGI(TAG, "Tank state changed to: %d for monitor ID: %d, actuator ID: %d\n", event, monitor_id, actuator_id);
@@ -61,7 +61,7 @@ void tank_monitor_task(void *pvParameter)
 
     tank_monitor_event_hook_t event = {
         .actuator_id = 1,
-        .callback = event_callback,
+        .callback = tank_event_callback,
         .context = NULL};
 
     int event_id = 0;
