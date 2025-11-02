@@ -21,7 +21,7 @@ error_type_t queue_handler_wrapper_send(monitor_event_queue_t* queue_handler){
     
     }else
     {
-        ESP_LOGW(TAG, "queue full, resetting...");
+        ESP_LOGE(TAG, "queue full, resetting...");
         xQueueReset(event_queue);
 
         if (xQueueSend(event_queue, queue_handler,(TickType_t)0) == pdPASS) {
