@@ -11,33 +11,37 @@ static const char *TAG = "EVENT_HANDLER";
 void event_handler_task(void *Pvparameter)
 {
     monitor_event_queue_t event_handler;
-    error_type_t err = queue_handler_wrapper_receive(&event_handler);
-    if (err != SYSTEM_OK)
+    while (1)
     {
-        ESP_LOGE(TAG, "failed to receive a queue\n.");
-    }
-    else
-    {
-        switch (event_handler.event)
+        error_type_t err = queue_handler_wrapper_receive(&event_handler);
+        if (err != SYSTEM_OK)
         {
-        case EVENT_PUMP_OVERCURRENT:
-            ESP_LOGI(TAG, "overcurrent detected\n");
-            break;
-        case EVENT_PUMP_UNDERCURRENT:
-            break;
-        case EVENT_PUMP_NORMAL:
-            break;
-        case EVENT_TANK_FULL_STATE:
-            ESP_LOGI(TAG, "tank level is full\n");
-            break;
-        case EVENT_TANK_LOW_STATE:
-            ESP_LOGI(TAG, "tank level is low\n");
-            break;
-        case EVENT_TANK_NORMAL_STATE:
-            ESP_LOGI(TAG, "tank is in normal state\n");
-            break;
-        default:
-            break;
+            ESP_LOGE(TAG, "failed to receive a queue\n.");
+        }
+        else
+        {
+            switch (event_handler.event)
+            {
+            case EVENT_PUMP_OVERCURRENT:
+                ESP_LOGI(TAG, "overcurrent detected\n");
+                break;
+            case EVENT_PUMP_UNDERCURRENT:
+                break;
+            case EVENT_PUMP_NORMAL:
+                break;
+            case EVENT_TANK_FULL_STATE:
+                ESP_LOGI(TAG, "tank level is full\n");
+                break;
+            case EVENT_TANK_LOW_STATE:
+                ESP_LOGI(TAG, "tank level is low\n");
+                break;
+            case EVENT_TANK_NORMAL_STATE:
+                ESP_LOGI(TAG, "tank is in normal state\n");
+                break;
+            default:
+                break;
+            }
         }
     }
+    vTaskDelay(pdMS_TO_TICKS(1000));
 }
