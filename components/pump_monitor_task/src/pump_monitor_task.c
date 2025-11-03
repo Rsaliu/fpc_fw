@@ -28,6 +28,7 @@ typedef struct
     acs712_sensor_t* acs;
 } task_objects_t;
 
+static pump_state_machine_state_t pump_state_machine_state = PUMP_STATE_MACHINE_NORMAL_STATE;
 static void pump_event_callback(void *context, int actuator_id, event_type_t event, int pump_monitor_id)
 {
 
