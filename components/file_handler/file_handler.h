@@ -5,6 +5,10 @@
 #include "esp_spiffs.h"
 #include <sys/stat.h>
 
+typedef esp_err_t (*FileInitFunc)(void);
+typedef void (*FileDeinitFunc)(void);
+void file_register_fs(FileInitFunc init, FileDeinitFunc deinit);
+
 esp_err_t file_init(void);
 void file_deinit(void);
 esp_err_t file_write(const char *path, const char *data, size_t size);
