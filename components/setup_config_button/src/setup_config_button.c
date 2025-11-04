@@ -61,4 +61,3 @@ void setup_config_button_init(setup_config_button_config_t* config){
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add(config->button_pin_number,setup_config_button_isr_handler,(void*) config);
 }
-
