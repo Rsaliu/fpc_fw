@@ -1,12 +1,12 @@
 #include <stdio.h>
+#include <inttypes.h>
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <setup_config_button.h>
-#include <common_headers.h>
 #include "esp_log.h"
 
-tatic const char*TAG = "SETUP_CONFIG_BUTTON";
-
+static const char*TAG = "SETUP_CONFIG_BUTTON";
 static void dummy_webserver(void*pvParameter){
     for (;;)
     {
@@ -31,5 +31,4 @@ void app_main(void)
         
          setup_config_button_init(&button_config);
          setup_config_button_two_event(&button_config);
-
 }         

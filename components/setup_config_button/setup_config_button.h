@@ -1,20 +1,22 @@
-#ifndef __SETUP_CONFIG_BUTTON__
-#define __SETUP_CONFIG_BUTTON__
-#include <common_headers.h>
+#ifndef __SETUP_CONFIG_BUTTON_H__
+#define __SETUP_CONFIG_BUTTON_H__
 #include <stdbool.h>
 #include <stdint.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <common_headers.h>
 
-typedef error_type_t (*setup_config_button_t)();
- 
+typedef void(*websever_task_t)(void*pvParameter);
+
 typedef struct 
 {
 
+    TaskHandle_t other_task;
     uint8_t button_pin_number;
-    setup_config_button_t config_button;
-
-
+    websever_task_t webserver;
 }setup_config_button_config_t;
-void setup_config_button_task(void* Pvparameter);
+
+error_type_t setup_config_button_two_event(setup_config_button_config_t*config);
 void setup_config_button_init(setup_config_button_config_t* config);
 
 
