@@ -13,10 +13,10 @@ static void IRAM_ATTR device_mode_isr_handler(void*arg){
     BaseType_t xHigherPriorityTaskWoken;
     xHigherPriorityTaskWoken = pdFALSE;
     esp_restart();
-    if ( xHigherPriorityTaskWoken )
-    {
-        portYIELD_FROM_ISR();
-    }     
+    // if ( xHigherPriorityTaskWoken )
+    // {
+    //     portYIELD_FROM_ISR();
+    // }     
 }
 
 error_type_t device_mode_event(device_mode_config_t*config){
@@ -31,7 +31,7 @@ error_type_t device_mode_event(device_mode_config_t*config){
     {
 
         ESP_LOGI(BUTTON_TAG, "button release: continue other task");
-        config->other_task();
+        config->task();
         
     }
 
