@@ -7,12 +7,12 @@
 #include <common_headers.h>
 
 typedef void(*websever_task_t)(void);
-typedef void(*task_handler_t)(void);
+typedef void(*example_t)(void);
 
 typedef struct 
 {
 
-    task_handler_t other_task;
+    example_t task;
     uint8_t button_pin_number;
     websever_task_t webserver;
 }device_mode_config_t;
