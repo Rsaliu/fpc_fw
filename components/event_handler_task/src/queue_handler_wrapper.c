@@ -18,18 +18,6 @@ error_type_t queue_handler_wrapper_send(monitor_event_queue_t* queue_handler){
     if (xQueueSend(event_queue, queue_handler,(TickType_t)0) == pdPASS)
     {
         ESP_LOGI(TAG, "sucessfully send a monitor queue\n");
-    
-    }else
-    {
-        ESP_LOGE(TAG, "queue full, resetting...");
-        xQueueReset(event_queue);
-
-        if (xQueueSend(event_queue, queue_handler,(TickType_t)0) == pdPASS) {
-            ESP_LOGI(TAG, "event sent after queue reset");
-        } else {
-            ESP_LOGE(TAG, "failed to send even after reset");
-            return SYSTEM_FAILED;
-        }
     }
   return SYSTEM_OK;
 }

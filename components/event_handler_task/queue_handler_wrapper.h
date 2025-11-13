@@ -4,12 +4,15 @@
 #include <stdint.h>
 #include <event.h>
 #include <common_headers.h>
-
+#include "relay_driver.h"
 
 typedef struct 
 {
-    int monitors_id;
+    void*context;
+    int actuator_id;
+    int monitor_id;
     event_type_t event;
+
 }monitor_event_queue_t;
 
 error_type_t queue_handler_wrapper_send(monitor_event_queue_t* queue_handler);
