@@ -1,6 +1,8 @@
 #include "pump_monitor_task.h"
 #include "constant.h"
 #include "esp_log.h"
+#include "freertos/queue.h"
+
 
 static const char *TAG = "PUMP_MONITOR_TASK";
 
@@ -24,13 +26,12 @@ typedef struct
     acs712_sensor_t* acs;
 } task_objects_t;
 
-
-
 static void pump_monitor_task(void *pvParameters)
 {
     pump_monitor_task_params_t *params = (pump_monitor_task_params_t *)pvParameters;
     task_objects_t objects = {0};
     int cs_id = params->current_sensor_id;
+    
 
     // Create pump
     cJSON *pump_json = params->pump_config;
@@ -207,7 +208,7 @@ static void pump_monitor_task(void *pvParameters)
              params->pm_id, params->pump_id, params->current_sensor_id);
     while (1)
     {
-        error_type_t err = pump_monitor_check_current(objects.pm);
+        error_type_t err  = pump_monitor_check_current(objects.pm);
         if (err != SYSTEM_OK)
         {
             ESP_LOGE(TAG, "Failed to check current for pump monitor ID %d", params->pm_id);

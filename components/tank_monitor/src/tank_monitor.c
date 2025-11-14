@@ -188,6 +188,8 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
         // Notify subscribers about the state change
         for (int i = 0; i < monitor->subscriber_count; i++) {
             if (monitor->subscribers[i] != NULL && monitor->subscribers[i]->hook != NULL && monitor->subscribers[i]->hook->callback != NULL) {
+                event_type_t event = state_machine_state_to_event(monitor->tank_state);
+                ESP_LOGI(TAG,"tank state is %d", event);
                 monitor->subscribers[i]->hook->callback(
                     monitor->subscribers[i]->hook->context,
                     monitor->subscribers[i]->hook->actuator_id,
