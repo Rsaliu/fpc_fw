@@ -4,39 +4,32 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_log.h"
-#include "subscriber_event_task.h"
+#include "queue_handler_wrapper.h"
+#include "relay_driver.h"
 
 static const char *TAG = "TANK_MONITOR_TASK";
 
-tank_state_machine_state_t tank_state_machine_state = TANK_STATE_MACHINE_NORMAL_STATE;
 static void tank_event_callback(void *context, int actuator_id, event_type_t event, int monitor_id)
 {
   // Example callback function for tank monitor events
-  ESP_LOGI(TAG, "Tank state changed to: %d for monitor ID: %d, actuator ID: %d\n", event, monitor_id, actuator_id);
-
-  monitor_event_queue_t tank_monitor_event = {
-      .event = EVENT_TANK_NORMAL_STATE,
-      .monitors_id = 1};
-
-  error_type_t err = queue_handler_wrapper_send(&tank_monitor_event);
-
+  ESP_LOGI(TAG, "Tank state changed to: %d for monitor ID: %d, actuator ID: %d\n", (int)event, monitor_id, actuator_id);
+  pump_control_unit_t *pcu = (pump_control_unit_t *)context;
+  relay_t *relay = NULL;
+  error_type_t err = pump_control_unit_get_relay_by_id(pcu, actuator_id, &relay);
   if (err != SYSTEM_OK)
   {
-    ESP_LOGE(TAG, "failed to send tank monitor event\n.");
+    ESP_LOGE(TAG, "failed to get relay id\n");
   }
 
-  // Simulate changing the state based on the event
-  if (event == EVENT_TANK_FULL_STATE)
+  monitor_event_queue_t queue = {
+      .actuator_id = actuator_id,
+      .context = context,
+      .monitor_id = monitor_id,
+      .event = event};
+  err = queue_handler_wrapper_send(&queue);
+  if (err != SYSTEM_OK)
   {
-    tank_state_machine_state = TANK_STATE_MACHINE_FULL_STATE;
-  }
-  else if (event == EVENT_TANK_LOW_STATE)
-  {
-    tank_state_machine_state = TANK_STATE_MACHINE_LOW_STATE;
-  }
-  else
-  {
-    tank_state_machine_state = TANK_STATE_MACHINE_NORMAL_STATE;
+    ESP_LOGE(TAG, "failed to send a queue\n.");
   }
 }
 
@@ -49,28 +42,24 @@ void tank_monitor_task(void *pvParameter)
     ESP_LOGE(TAG, "Invalide config or invalide tank monitor array");
   }
 
-  // subscribe to an event once for each tank monitor
-  ESP_LOGI(TAG, "Starting tank monitor subscription setup...");
-  ESP_LOGI(TAG, "Number of tank monitors: %d", config->tank_monitor_count);
+  // Subscribe once before the loop
   for (int i = 0; i < config->tank_monitor_count; i++)
   {
-    if (config->tank_monitor[i] != NULL)
-    {
-      ESP_LOGI(TAG, "Monitor[%d]  subscribe to an event", i);
-    }
-
-    tank_monitor_event_hook_t event = {
-        .actuator_id = 1,
-        .callback = tank_event_callback,
-        .context = NULL};
-
-    int event_id = 0;
-    error_type_t err = tank_monitor_subscribe_event(config->tank_monitor[i], &event, &event_id);
-
+    relay_config_t relay_cfg;
+    error_type_t err = relay_get_config(config->relay[i], &relay_cfg);
     if (err != SYSTEM_OK)
     {
-      ESP_LOGE(TAG, "Failed to subscribe monitor[%d]", i);
+      ESP_LOGE(TAG, "failed to get relay config\n.");
     }
+
+    tank_monitor_event_hook_t hook = {
+        .context = config->pcu,
+        .actuator_id = relay_cfg.id,
+        .callback  = tank_event_callback};
+
+    int event_id;
+    tank_monitor_subscribe_event(config->tank_monitor[i], &hook, &event_id);
+    ESP_LOGI(TAG, "Subscribed to monitor[%d] relay_id [%d] with event_id %d", i, relay_cfg.id, event_id);
   }
 
   ESP_LOGI(TAG, "entering the task monitor loop......\n");
@@ -81,11 +70,9 @@ void tank_monitor_task(void *pvParameter)
       if (config->tank_monitor[i] == NULL)
       {
         ESP_LOGE(TAG, "Monitor[%d] is NULL", i);
-        
       }
-      ESP_LOGI(TAG, "number of monitor[%d]\n", i);
       tank_monitor_check_level(config->tank_monitor[i]);
     }
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
-  vTaskDelay(pdMS_TO_TICKS(1000));
 }
