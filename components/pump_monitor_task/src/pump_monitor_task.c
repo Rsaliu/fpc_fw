@@ -2,11 +2,9 @@
 #include "constant.h"
 #include "esp_log.h"
 #include "freertos/queue.h"
-#include "queue_handler_wrapper.h"
+
 
 static const char *TAG = "PUMP_MONITOR_TASK";
-
-
 
 typedef struct
 {
@@ -27,39 +25,6 @@ typedef struct
     ads1115_t *ads;
     acs712_sensor_t* acs;
 } task_objects_t;
-
-static pump_state_machine_state_t pump_state_machine_state = PUMP_STATE_MACHINE_NORMAL_STATE;
-static void pump_event_callback(void *context, int actuator_id, event_type_t event, int pump_monitor_id)
-{
-
-    ESP_LOGI(TAG, "Pump state changed to: %d for pump_monitor ID: %d, actuator ID: %d", event, pump_monitor_id, actuator_id);
-    
-     monitor_event_queue_t pump_monitor = {
-        .monitors_id = 1,
-        .event = EVENT_PUMP_NORMAL
-     };
-    error_type_t err = queue_handler_wrapper_send(&pump_monitor);
-    if (err != SYSTEM_OK)
-    {
-        ESP_LOGE(TAG, "failed to send pump monitor event\n.");
-    }
-    
-    if (event == EVENT_PUMP_NORMAL)
-    {
-        pump_state_machine_state = PUMP_STATE_MACHINE_NORMAL_STATE;
-    }
-    else if (event == EVENT_PUMP_UNDERCURRENT)
-    {
-        pump_state_machine_state = PUMP_STATE_MACHINE_UNDERCURRENT_STATE;
-    }
-    else
-    {
-        pump_state_machine_state = PUMP_STATE_MACHINE_OVERCURRENT_STATE;
-    }
-    ESP_LOGI(TAG, "Updated pump_state_machine_state: %d", pump_state_machine_state);
-}
-
-
 
 static void pump_monitor_task(void *pvParameters)
 {
@@ -239,23 +204,11 @@ static void pump_monitor_task(void *pvParameters)
     }
 
     // Monitoring loop
-    pump_monitor_event_hook_t pump_hook = {
-        .actuator_id = 1,
-        .context = NULL,
-        .callback = pump_event_callback
-    };
-    int event_id = 0;
-    error_type_t err = pump_monitor_subscribe_event(objects.pm, &pump_hook, &event_id);
-    if (err != SYSTEM_OK)
-    {
-        ESP_LOGE(TAG, "Failed to subscribe monitor\n");
-    }
-    
     ESP_LOGI(TAG, "Pump monitor task started for PM ID %d (Pump ID %d, CS ID %d)",
              params->pm_id, params->pump_id, params->current_sensor_id);
     while (1)
     {
-        err = pump_monitor_check_current(objects.pm);
+        error_type_t err  = pump_monitor_check_current(objects.pm);
         if (err != SYSTEM_OK)
         {
             ESP_LOGE(TAG, "Failed to check current for pump monitor ID %d", params->pm_id);
