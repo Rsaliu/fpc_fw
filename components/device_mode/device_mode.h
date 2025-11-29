@@ -6,19 +6,18 @@
 #include "freertos/task.h"
 #include <common_headers.h>
 
-typedef void(*websever_task_t)(void);
-typedef void(*example_t)(void);
+typedef void(*websever_task_starter_t)(void);
+typedef void(*main_tasks_starter_t)(void);
 
 typedef struct 
 {
-
-    example_t task;
+    main_tasks_starter_t task;
     uint8_t button_pin_number;
-    websever_task_t webserver;
+    websever_task_starter_t webserver;
 }device_mode_config_t;
 
-error_type_t device_mode_event(device_mode_config_t*config);
-void device_mode_init(device_mode_config_t* config);
+error_type_t device_mode_event(const device_mode_config_t*config);
+error_type_t device_mode_init(const device_mode_config_t *config);
 
  
 #endif
