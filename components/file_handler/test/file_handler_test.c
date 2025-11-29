@@ -39,9 +39,9 @@ esp_err_t spiffs_init(void) {
     return ESP_OK;
 }
 
-void spiffs_deinit(void) {
-    esp_vfs_spiffs_unregister(NULL);
-    ESP_LOGI("SPIFFS", "SPIFFS unmounted");
+esp_err_t spiffs_deinit(void) {
+    ESP_LOGI("SPIFFS", "SPIFFS to be unmounted");
+    return esp_vfs_spiffs_unregister(NULL);
 }
 
 #define BASE_PATH "/spiffs/"
@@ -57,7 +57,10 @@ void fileHandlersetUp(void) {
 }
 
 void fileHandlertearDown(void) {
-    file_deinit();
+    esp_err_t  err = file_deinit();
+    if(err != ESP_OK){
+        exit(1);
+    }
     file_delete(TEST_FILE);
     file_delete(RENAMED_FILE);
 }

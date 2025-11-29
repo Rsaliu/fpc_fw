@@ -24,12 +24,14 @@ esp_err_t file_init(void) {
     return init_func();
 }
 
-void file_deinit(void) {
+esp_err_t file_deinit(void) {
     if (deinit_func != NULL) {
-        deinit_func();
+         return deinit_func();
     } else {
         ESP_LOGE(TAG, "No deinit function registered");
+        return ESP_FAIL;
     }
+
 }
 
 esp_err_t file_write(const char *path, const char *data, size_t size)
