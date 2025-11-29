@@ -12,11 +12,7 @@ static const char*BUTTON_TAG = "SETUP_CONFIG_BUTTON";
 static void IRAM_ATTR device_mode_isr_handler(void*arg){
     BaseType_t xHigherPriorityTaskWoken;
     xHigherPriorityTaskWoken = pdFALSE;
-    esp_restart();
-    // if ( xHigherPriorityTaskWoken )
-    // {
-    //     portYIELD_FROM_ISR();
-    // }     
+    esp_restart();  
 }
 
 error_type_t device_mode_event(device_mode_config_t*config){
