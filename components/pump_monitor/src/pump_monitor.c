@@ -1,10 +1,8 @@
-#include <pump_monitor.h>
+#include "pump_monitor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "esp_log.h"
-#include "pump_monitor.h"
-#include <event.h>
 
 static const char *TAG = "pump_monitor";
 
@@ -13,20 +11,29 @@ pump_monitor_t *pump_monitor_create(pump_monitor_config_t config)
     pump_monitor_t *pump_monitor = (pump_monitor_t *)malloc(sizeof(pump_monitor_t));
     if (pump_monitor == NULL)
     {
-        return NULL; // Handle memory allocation failure
+        return NULL; 
     }
+
+    memset(pump_monitor, 0, sizeof(pump_monitor_t));
 
     pump_monitor->config = (pump_monitor_config_t *)malloc(sizeof(pump_monitor_config_t));
     if (pump_monitor->config == NULL)
     {
         free(pump_monitor);
-        return NULL; // Handle memory allocation failure
+        return NULL;
     }
 
     memcpy(pump_monitor->config, &config, sizeof(pump_monitor_config_t));
     pump_monitor->state = PUMP_MONITOR_NOT_INITIALIZED;
-    pump_monitor->pump_state = PUMP_STATE_MACHINE_NORMAL_STATE; // Initialize pump state to normal
-    pump_monitor->subscriber_count = 0;                         // Initialize subscriber count to 0
+    pump_monitor->pump_state = PUMP_STATE_MACHINE_NORMAL_STATE;
+    pump_monitor->subscriber_count = 0;                         
+
+    for (int i = 0; i < PUMP_MONITOR_MAXIMUM_SUBSCRIBER; ++i)
+    {
+        pump_monitor->subscribers[i].id = -1;
+        pump_monitor->subscribers[i].in_use = false;
+        
+    }
 
     return pump_monitor;
 }
@@ -35,16 +42,16 @@ error_type_t pump_monitor_init(pump_monitor_t *pump_monitor)
 {
     if (pump_monitor == NULL || pump_monitor->config == NULL)
     {
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor or configuration
+        return SYSTEM_NULL_PARAMETER; 
     }
-    // Validate the pump configuration
+    
     if (pump_monitor->config->pump == NULL || pump_monitor->config->sensor == NULL)
     {
-        return SYSTEM_INVALID_PARAMETER; // Handle invalid configuration
+        return SYSTEM_INVALID_PARAMETER; 
     }
     if (pump_monitor->state != PUMP_MONITOR_NOT_INITIALIZED)
     {
-        return SYSTEM_INVALID_STATE; // pump_monitor is already initialized
+        return SYSTEM_INVALID_STATE; 
     }
 
     pump_monitor->state = PUMP_MONITOR_INITIALIZED;
@@ -56,12 +63,12 @@ error_type_t pump_monitor_deinit(pump_monitor_t *pump_monitor)
 {
     if (pump_monitor == NULL || pump_monitor->config == NULL)
     {
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor or configuration
+        return SYSTEM_NULL_PARAMETER; 
     }
 
     if (pump_monitor->state == PUMP_MONITOR_NOT_INITIALIZED)
     {
-        return SYSTEM_INVALID_STATE; // pump_monitor is not initialized
+        return SYSTEM_INVALID_STATE; 
     }
 
     pump_monitor->state = PUMP_MONITOR_NOT_INITIALIZED;
@@ -71,9 +78,9 @@ error_type_t pump_monitor_deinit(pump_monitor_t *pump_monitor)
 
 error_type_t pump_monitor_destroy(pump_monitor_t **pump_monitor)
 {
-    if (*pump_monitor == NULL)
+    if (pump_monitor == NULL || *pump_monitor == NULL)
     {
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor
+        return SYSTEM_NULL_PARAMETER; 
     }
 
     if ((*pump_monitor)->config != NULL)
@@ -82,7 +89,7 @@ error_type_t pump_monitor_destroy(pump_monitor_t **pump_monitor)
     }
 
     free(*pump_monitor);
-    *pump_monitor = NULL; // Set pointer to NULL after freeing
+    *pump_monitor = NULL; 
 
     ESP_LOGI(TAG, "Pump monitor destroyed");
     return SYSTEM_OK;
@@ -92,7 +99,7 @@ error_type_t pump_monitor_get_state(const pump_monitor_t *pump_monitor, pump_mon
 {
     if (pump_monitor == NULL || state == NULL)
     {
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor or state pointer
+        return SYSTEM_NULL_PARAMETER; 
     }
 
     *state = pump_monitor->state;
@@ -103,7 +110,7 @@ error_type_t pump_monitor_get_config(const pump_monitor_t *pump_monitor, pump_mo
 {
     if (pump_monitor == NULL || config == NULL)
     {
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor or configuration pointer
+        return SYSTEM_NULL_PARAMETER; 
     }
 
     memcpy(config, pump_monitor->config, sizeof(pump_monitor_config_t));
@@ -115,16 +122,16 @@ static event_type_t state_machine_state_to_event(pump_state_machine_state_t stat
     switch (state)
     {
     case PUMP_STATE_MACHINE_NORMAL_STATE:
-        return EVENT_PUMP_NORMAL; // Normal current supply state of the pump
+        return EVENT_PUMP_NORMAL; 
 
     case PUMP_STATE_MACHINE_UNDERCURRENT_STATE:
-        return EVENT_PUMP_UNDERCURRENT; // pump current supply is less than the current rating
+        return EVENT_PUMP_UNDERCURRENT; 
 
     case PUMP_STATE_MACHINE_OVERCURRENT_STATE:
-        return EVENT_PUMP_OVERCURRENT; // pump current supply is greater than the current rating
+        return EVENT_PUMP_OVERCURRENT; 
 
     default:
-        return EVENT_UNKNOWN; // Unknown state
+        return EVENT_UNKNOWN;
     }
 }
 
@@ -132,30 +139,29 @@ error_type_t pump_monitor_check_current(pump_monitor_t *pump_monitor)
 {
     if (pump_monitor == NULL || pump_monitor->config == NULL || pump_monitor->config->sensor == NULL)
     {
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor or sensor
+        return SYSTEM_NULL_PARAMETER;
     }
 
-    // Simulate checking the current sensor
-    float current_amp_reading;
-  
-    error_type_t err = current_sensor_get_current_in_amp(pump_monitor->config->sensor, &current_amp_reading);
-
+    float current_amp_reading = 0.0f;
+    error_type_t err = current_sensor_get_current(pump_monitor->config->sensor, &current_amp_reading);
     if (err != SYSTEM_OK)
     {
-        return err; // Handle error in getting level from sensor
+        return err;
     }
+
     pump_config_t pump_config;
     err = pump_get_config(pump_monitor->config->pump, &pump_config);
     if (err != SYSTEM_OK)
     {
-        return err; // Handle error in getting tank configuration
+        return err;
     }
 
     float normal_current_supply = pump_config.current_rating;
-    float low_current_supply = normal_current_supply - normal_current_supply * 0.05;
-    float high_current_supply = normal_current_supply + normal_current_supply * 0.05;
+    float low_current_supply = normal_current_supply - normal_current_supply * 0.05f;
+    float high_current_supply = normal_current_supply + normal_current_supply * 0.05f;
 
     pump_state_machine_state_t previous_state = pump_monitor->pump_state;
+
     switch (pump_monitor->pump_state)
     {
 
@@ -163,13 +169,13 @@ error_type_t pump_monitor_check_current(pump_monitor_t *pump_monitor)
         if (current_amp_reading < low_current_supply)
         {
             pump_monitor->pump_state = PUMP_STATE_MACHINE_UNDERCURRENT_STATE;
-          
+
             ESP_LOGI(TAG, "Current supply is below normal: %.2f < %.2f", current_amp_reading, low_current_supply);
         }
         else if (current_amp_reading > high_current_supply)
         {
             pump_monitor->pump_state = PUMP_STATE_MACHINE_OVERCURRENT_STATE;
-            
+
             ESP_LOGI(TAG, "Current supply is above normal: %.2f > %.2f", current_amp_reading, high_current_supply);
         }
         break;
@@ -191,92 +197,106 @@ error_type_t pump_monitor_check_current(pump_monitor_t *pump_monitor)
         break;
 
     default:
-        return SYSTEM_INVALID_STATE; // Invalid state
+        return SYSTEM_INVALID_STATE;
     }
+
     if (pump_monitor->pump_state != previous_state)
     {
-        // Notify subscribers about the state change
-        for (int i = 0; i < pump_monitor->subscriber_count; i++)
+        for (int i = 0; i < PUMP_MONITOR_MAXIMUM_SUBSCRIBER; ++i)
         {
-            if (pump_monitor->subscribers[i] != NULL && pump_monitor->subscribers[i]->hook != NULL && pump_monitor->subscribers[i]->hook->callback != NULL)
+            if (pump_monitor->subscribers[i].in_use)
             {
-                pump_monitor->subscribers[i]->hook->callback(
-                    pump_monitor->subscribers[i]->hook->context,
-                    pump_monitor->subscribers[i]->hook->actuator_id,
-                    state_machine_state_to_event(pump_monitor->pump_state),
-                    pump_monitor->config->id); // Call the subscriber's callback
+                pump_monitor_event_hook_t *hook = &pump_monitor->subscribers[i].hook;
+                if (hook && hook->callback) 
+                {
+                    hook->callback(hook->context,
+                                   hook->actuator_id,
+                                   state_machine_state_to_event(pump_monitor->pump_state),
+                                   pump_monitor->config->id);
+                }
+                else
+                {
+                    ESP_LOGW(TAG, "Skipping subscriber %d - no callback assigned", pump_monitor->subscribers[i].id);
+                }
             }
         }
     }
+
     return SYSTEM_OK;
 }
-
 
 error_type_t pump_monitor_subscribe_event(pump_monitor_t *pump_monitor, const pump_monitor_event_hook_t *hook, int *event_id)
 {
     if (pump_monitor == NULL || hook == NULL || event_id == NULL)
     {
         ESP_LOGE(TAG, "Null parameter in pump_monitor_subscribe_event");
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor, callback, or event_id pointer
+        return SYSTEM_NULL_PARAMETER;
     }
-    ESP_LOGE(TAG, "pump_monitor pointer: %p, hook pointer: %p, event_id pointer: %p\n", pump_monitor, hook, event_id);
-    
-    //  Check if the pump_monitor is initialized
+
     if (pump_monitor->state != PUMP_MONITOR_INITIALIZED)
     {
-      
         ESP_LOGE(TAG, "Pump monitor is not initialized");
-        return SYSTEM_INVALID_STATE; // pump_monitor is not initialized
+        return SYSTEM_INVALID_STATE;
     }
-    // Check if the maximum number of subscribers is reached
+
     if (pump_monitor->subscriber_count >= PUMP_MONITOR_MAXIMUM_SUBSCRIBER)
     {
-        return SYSTEM_BUFFER_OVERFLOW; // Maximum number of subscribers reached
+        return SYSTEM_BUFFER_OVERFLOW;
     }
 
-    pump_monitor_subscriber_t *subscriber = (pump_monitor_subscriber_t *)malloc(sizeof(pump_monitor_subscriber_t));
-    if (subscriber == NULL)
+    /* find first free slot */
+    int slot = -1;
+    for (int i = 0; i < PUMP_MONITOR_MAXIMUM_SUBSCRIBER; ++i)
     {
-        return SYSTEM_FAILED; // Handle memory allocation failure
+        if (!pump_monitor->subscribers[i].in_use) {
+            slot = i;
+            break;
+        }
     }
-    subscriber->id = pump_monitor->subscriber_count; // Assign a unique ID to the subscriber
-    subscriber->hook = (pump_monitor_event_hook_t *)malloc(sizeof(pump_monitor_event_hook_t));
-    if (subscriber->hook == NULL)
-    {
-        free(subscriber);     // Free the subscriber if hook allocation fails
-        return SYSTEM_FAILED; // Handle memory allocation failure
-    }
-    // copy using memcpy to avoid issues with pointer assignment
-    memcpy(subscriber->hook, hook, sizeof(pump_monitor_event_hook_t));
-    pump_monitor->subscribers[pump_monitor->subscriber_count++] = subscriber; // Add the subscriber to the list
-    *event_id = subscriber->id;                                               // Return the ID of the newly subscribed event
 
+    if (slot < 0) {
+        return SYSTEM_BUFFER_OVERFLOW;
+    }
+
+    /* copy hook inline (safe) */
+    pump_monitor->subscribers[slot].hook = *hook;
+    pump_monitor->subscribers[slot].id = slot;
+    pump_monitor->subscribers[slot].in_use = true;
+    pump_monitor->subscriber_count++;
+
+    *event_id = pump_monitor->subscribers[slot].id;
+
+    ESP_LOGI(TAG, "Subscribed event id=%d (slot=%d)", *event_id, slot);
     return SYSTEM_OK;
 }
+
 error_type_t pump_monitor_unsubscribe_event(pump_monitor_t *pump_monitor, int event_id)
 {
-    if (pump_monitor == NULL || event_id < 0 || event_id >= pump_monitor->subscriber_count)
+    if (pump_monitor == NULL)
     {
-        return SYSTEM_NULL_PARAMETER; // Handle null pump_monitor or invalid event_id
+        return SYSTEM_NULL_PARAMETER;
     }
 
-    // Check if the pump_monitor is initialized
+    if (event_id < 0 || event_id >= PUMP_MONITOR_MAXIMUM_SUBSCRIBER) {
+        return SYSTEM_INVALID_PARAMETER;
+    }
+
     if (pump_monitor->state != PUMP_MONITOR_INITIALIZED)
     {
-        return SYSTEM_INVALID_STATE; // pump_monitor is not initialized
+        return SYSTEM_INVALID_STATE;
     }
 
-    // Free the subscriber and remove it from the list
-    free(pump_monitor->subscribers[event_id]->hook); // Free the hook
-    free(pump_monitor->subscribers[event_id]);
-    pump_monitor->subscribers[event_id] = NULL;
-
-    // Shift remaining subscribers down
-    for (int i = event_id; i < pump_monitor->subscriber_count - 1; i++)
-    {
-        pump_monitor->subscribers[i] = pump_monitor->subscribers[i + 1];
+    if (!pump_monitor->subscribers[event_id].in_use) {
+        return SYSTEM_INVALID_PARAMETER; 
     }
-    pump_monitor->subscriber_count--; // Decrease the count of subscribers
+
+    /* clear the slot */
+    pump_monitor->subscribers[event_id].in_use = false;
+    pump_monitor->subscribers[event_id].id = -1;
+    memset(&pump_monitor->subscribers[event_id].hook, 0, sizeof(pump_monitor_event_hook_t));
+    pump_monitor->subscriber_count--;
+
+    ESP_LOGI(TAG, "Unsubscribed event id=%d", event_id);
 
     return SYSTEM_OK;
 }
