@@ -39,7 +39,7 @@ error_type_t current_sensor_callback_ads1115_channel0_read(void* context, int* a
     }
     int16_t raw_value = 0;
     ads1115_input_channel_t input_channel = ADS1115_CHANNEL_0; // Specify
-    error_type_t result = ads1115_read(sensor, &raw_value, input_channel);
+    error_type_t result = ads1115_read_one_shot_with_channel(sensor, &raw_value, input_channel);
     if(result != SYSTEM_OK) {
         return result; // Handle error in reading current
     }
@@ -55,7 +55,7 @@ error_type_t current_sensor_callback_ads1115_channel1_read(void* context, int* a
     }
     int16_t raw_value = 0;
     ads1115_input_channel_t input_channel = ADS1115_CHANNEL_1; // Specify
-    error_type_t result = ads1115_read(sensor, &raw_value, input_channel);
+    error_type_t result = ads1115_read_one_shot_with_channel(sensor, &raw_value, input_channel);
     if(result != SYSTEM_OK) {
         return result; // Handle error in reading current
     }
@@ -72,7 +72,7 @@ error_type_t current_sensor_callback_ads1115_channel2_read(void* context, int* a
     }
     int16_t raw_value = 0;
     ads1115_input_channel_t input_channel = ADS1115_CHANNEL_2; // Specify
-    error_type_t result = ads1115_read(sensor, &raw_value, input_channel);
+    error_type_t result = ads1115_read_one_shot_with_channel(sensor, &raw_value, input_channel);
     if(result != SYSTEM_OK) {
         return result; // Handle error in reading current
     }
@@ -88,7 +88,7 @@ error_type_t current_sensor_callback_ads1115_channel3_read(void* context, int* a
     }
     int16_t raw_value = 0;
     ads1115_input_channel_t input_channel = ADS1115_CHANNEL_3; // Specify
-    error_type_t result = ads1115_read(sensor, &raw_value, input_channel);
+    error_type_t result = ads1115_read_one_shot_with_channel(sensor, &raw_value, input_channel);
     if(result != SYSTEM_OK) {
         return result; // Handle error in reading current
     }

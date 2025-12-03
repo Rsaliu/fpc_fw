@@ -1,6 +1,8 @@
 #ifndef __ADS1115_H__
 #define __ADS1115_H__
 #include "driver/i2c_master.h"
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
 
 #include "common_headers.h"
 typedef enum{
@@ -9,6 +11,11 @@ typedef enum{
     ADS1115_LO_THRESH_REGISTER,
     ADS1115_HI_THRESH_REGISTER
 }ads1115_register_address_t;
+
+typedef enum{
+    ADS1115_CONVERSION_READY = 0,
+    ADS1115_CONVERSION_IN_PROGRESS = 1
+}ads1115_conversion_status_t;
 
 typedef enum{
     ADS1115_CHANNEL_DIFF_0_1 = 0x00, // Differential channel between 0 and 1
@@ -78,10 +85,20 @@ typedef enum{
     ADD_SDA = 0x4B, // SDA address
 }ads1115_addr_t;
 
+ typedef struct {
+    void* context;
+    TickType_t timestamp;
+    uint8_t channel;
+    void* callers_context;
+ }overcurrent_queue_item_t;
+
+typedef void (*ads1115_comparator_callback_t)(overcurrent_queue_item_t item);
+
 typedef struct {
     i2c_port_t i2c_port; // I2C port number
     gpio_num_t sda_gpio; // SDA GPIO pin
     gpio_num_t scl_gpio; // SCL GPIO pin
+    gpio_num_t alert_ready_pin; // ALERT/READY pin
     uint32_t frequency_hz; // I2C frequency
     i2c_clock_source_t clock_source; // Clock source for the I2C bus
     uint8_t glitch_ignore_cnt; // Number of glitches to ignore
@@ -94,7 +111,11 @@ typedef struct ads1115_t ads1115_t;
 
 ads1115_t* ads1115_create(const ads1115_config_t* config);
 error_type_t ads1115_init(ads1115_t* ads);
-error_type_t ads1115_read(const ads1115_t* ads, int16_t* raw_value, ads1115_input_channel_t input_channel);
+error_type_t ads1115_set_read_channel(ads1115_t* ads, ads1115_input_channel_t input_channel);
+error_type_t ads1115_read_one_shot(const ads1115_t* ads, int16_t* raw_value);
+error_type_t ads1115_read_one_shot_with_channel(const ads1115_t* ads, int16_t* raw_value, ads1115_input_channel_t input_channel);
+error_type_t ads1115_read_comparator(ads1115_t* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt,ads1115_comparator_callback_t comparator_callback, void* context);
+error_type_t ads1115_read_comparator_with_channel(ads1115_t* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt,ads1115_comparator_callback_t comparator_callback, void* context, ads1115_input_channel_t input_channel);
 error_type_t ads1115_deinit(ads1115_t* ads);
 error_type_t ads1115_destroy(ads1115_t** ads);
 
