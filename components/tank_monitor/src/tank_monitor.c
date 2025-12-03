@@ -4,7 +4,8 @@
 #include <string.h>
 #include "esp_log.h"
 
-#define  TANK_MONITOR_MAXIMUM_SUBSCRIBER 10 // Maximum number of tank subscribers
+#define TANK_MONITOR_MAXIMUM_STATE_SUBSCRIBERS 10
+#define TANK_MONITOR_MAXIMUM_LEVEL_SUBSCRIBERS 10
 
 typedef struct{
     int id; // Unique identifier for the subscriber
@@ -16,8 +17,17 @@ struct tank_monitor_t {
     tank_monitor_config_t *config; // Pointer to the tank monitor configuration
     tank_monitor_state_t state; // State of the tank monitor
     tank_state_machine_state_t tank_state; // State of the tank being monitored
-    tank_monitor_subscriber_t* subscribers[TANK_MONITOR_MAXIMUM_SUBSCRIBER]; // Callback for tank state events
+    tank_monitor_subscriber_t* subscribers[TANK_MONITOR_MAXIMUM_STATE_SUBSCRIBERS]; // Callback for tank state events
     int subscriber_count; // Count of subscribers
+
+    tank_monitor_subscriber_t* state_subscribers[TANK_MONITOR_MAXIMUM_STATE_SUBSCRIBERS];
+    int state_subscriber_count;
+
+    struct { int id;
+        tank_monitor_level_hook_t     hook;
+        bool in_use;
+    } level_subscribers[TANK_MONITOR_MAXIMUM_LEVEL_SUBSCRIBERS];
+    int level_subscriber_count;
 };
 
 //dummy level_sensor object
@@ -200,10 +210,22 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
         }
     }
 
+    //////////////////
+
+    for (int i = 0; i < TANK_MONITOR_MAXIMUM_LEVEL_SUBSCRIBERS; i++) {
+        if (monitor->level_subscribers[i].in_use) {
+            monitor->level_subscribers[i].hook.callback(
+                monitor->level_subscribers[i].hook.context,
+                monitor->config->id,
+                current_level                 
+            );
+        }
+    }
+
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id)
+error_type_t tank_monitor_subscribe_state_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id)
 {
     if (monitor == NULL || hook == NULL || event_id == NULL) {
         ESP_LOGE(TAG,"Error: Null parameter in tank_monitor_subscribe_event\n");
@@ -216,7 +238,7 @@ error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_mo
         return SYSTEM_INVALID_STATE; // Monitor is not initialized
     }
     // Check if the maximum number of subscribers is reached
-    if (monitor->subscriber_count >= TANK_MONITOR_MAXIMUM_SUBSCRIBER) {
+    if (monitor->subscriber_count >= TANK_MONITOR_MAXIMUM_STATE_SUBSCRIBERS) {
         return SYSTEM_BUFFER_OVERFLOW; // Maximum number of subscribers reached
     }
 
@@ -238,7 +260,7 @@ error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_mo
 
     return SYSTEM_OK;
 }
-error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id){
+error_type_t tank_monitor_unsubscribe_state_event(tank_monitor_t *monitor,int event_id){
     if (monitor == NULL || event_id < 0 || event_id >= monitor->subscriber_count) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or invalid event_id
     }
@@ -259,6 +281,53 @@ error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id
     }
     monitor->subscriber_count--; // Decrease the count of subscribers
 
+    return SYSTEM_OK;
+}
+
+error_type_t tank_monitor_subscribe_level_event(tank_monitor_t *monitor, const tank_monitor_level_hook_t *hook,int *event_id)
+{
+    if (!monitor || !hook || !event_id || !hook->callback) {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (monitor->state != TANK_MONITOR_INITIALIZED) {
+        return SYSTEM_INVALID_STATE;
+    }
+    if (monitor->level_subscriber_count >= TANK_MONITOR_MAXIMUM_LEVEL_SUBSCRIBERS) {
+        return SYSTEM_BUFFER_OVERFLOW;
+    }
+
+    int slot = -1;
+    for (int i = 0; i < TANK_MONITOR_MAXIMUM_LEVEL_SUBSCRIBERS; i++) {
+        if (!monitor->level_subscribers[i].in_use) {
+            slot = i;
+            break;
+        }
+    }
+
+    monitor->level_subscribers[slot].id      = slot;
+    monitor->level_subscribers[slot].hook    = *hook;
+    monitor->level_subscribers[slot].in_use  = true;
+    monitor->level_subscriber_count++;
+
+    *event_id = slot;
+
+    ESP_LOGI(TAG, "Level event subscribed, id=%d", slot);
+    return SYSTEM_OK;
+}
+
+error_type_t tank_monitor_unsubscribe_level_event(tank_monitor_t *monitor, int event_id)
+{
+    if (!monitor || event_id < 0 || event_id >= TANK_MONITOR_MAXIMUM_LEVEL_SUBSCRIBERS) {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (!monitor->level_subscribers[event_id].in_use) {
+        return SYSTEM_INVALID_PARAMETER;
+    }
+
+    monitor->level_subscribers[event_id].in_use = false;
+    monitor->level_subscriber_count--;
+
+    ESP_LOGI(TAG, "Level event unsubscribed, id=%d", event_id);
     return SYSTEM_OK;
 }
 
