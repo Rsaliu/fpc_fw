@@ -125,12 +125,12 @@ TEST_CASE("tank_monitor_test", "test_tank_monitor_check_level") {
     tankMonitorTearDown();
 }
 
-TEST_CASE("tank_monitor_test", "test_tank_monitor_subscribe_event") {
+TEST_CASE("tank_monitor_test", "test_tank_monitor_subscribe_state_event") {
     tankMonitorSetUp();
     tank_monitor_init(monitor);
     
     int event_id;
-    error_type_t result = tank_monitor_subscribe_event(monitor, &test_hook, &event_id);
+    error_type_t result = tank_monitor_subscribe_state_event(monitor, &test_hook, &event_id);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     TEST_ASSERT_NOT_EQUAL(-1, event_id); // Ensure event ID is valid
     
@@ -144,16 +144,16 @@ TEST_CASE("tank_monitor_test", "test_tank_monitor_subscribe_event") {
     tankMonitorTearDown();
 }
 
-TEST_CASE("tank_monitor_test", "test_tank_monitor_unsubscribe_event") {
+TEST_CASE("tank_monitor_test", "test_tank_monitor_unsubscribe_state_event") {
     tankMonitorSetUp();
     tank_monitor_init(monitor);
     
     int event_id;
-    error_type_t result = tank_monitor_subscribe_event(monitor, &test_hook, &event_id);
+    error_type_t result = tank_monitor_subscribe_state_event(monitor, &test_hook, &event_id);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     
     // Unsubscribe the event
-    result = tank_monitor_unsubscribe_event(monitor, event_id);
+    result = tank_monitor_unsubscribe_state_event(monitor, event_id);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     
     // Check if the callback is no longer called

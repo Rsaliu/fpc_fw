@@ -52,8 +52,8 @@ error_type_t tank_monitor_destroy(tank_monitor_t **monitor);
 error_type_t tank_monitor_get_state(const tank_monitor_t *monitor, tank_monitor_state_t *state);
 error_type_t tank_monitor_get_config(const tank_monitor_t *monitor, tank_monitor_config_t *config);
 error_type_t tank_monitor_check_level(tank_monitor_t *monitor);
-error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id);
-error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id);
+error_type_t tank_monitor_subscribe_state_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id);
+error_type_t tank_monitor_unsubscribe_state_event(tank_monitor_t *monitor,int event_id);
 error_type_t tank_monitor_print_info(tank_monitor_t* monitor);
 error_type_t tank_monitor_print_info_into_buffer(tank_monitor_t* monitor, char* buffer, const size_t buffer_size);
 
