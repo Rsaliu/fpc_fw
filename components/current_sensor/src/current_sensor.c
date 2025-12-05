@@ -8,7 +8,7 @@
 #include "esp_log.h"
 
 static const char* TAG = "CURRENT_SENSOR";
-
+static const float OVERCURRENT_THRESHOLD_PERCENTAGE = 0.8; // 80% of max current
 struct current_sensor_t {
     current_sensor_config_t* config; // Configuration for the current sensor
     bool is_initialized; // Flag to check if the sensor is initialized
@@ -80,6 +80,28 @@ error_type_t current_sensor_get_current_in_amp(const current_sensor_t *sensor, f
     }
     ESP_LOGI(TAG, "Current reading: %.2f A\n", *current_value);
     
+    return SYSTEM_OK;
+}
+
+
+error_type_t current_sensor_monitor_overcurrent(const current_sensor_t* sensor, overcurrent_comparator_callback_t callback, void* context){
+    if (sensor == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null sensor
+    }
+    if (!sensor->is_initialized) {
+        return SYSTEM_INVALID_STATE; // Sensor is not initialized
+    }
+    if (callback == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null callback
+    }
+    float threshold_current = sensor->config->max_current * OVERCURRENT_THRESHOLD_PERCENTAGE; 
+    ESP_LOGI(TAG, "Setting up overcurrent monitoring for sensor ID: %d with threshold: %.2f A", sensor->config->id, threshold_current);
+    // Call the overcurrent monitoring function from the sensor configuration
+    error_type_t err = sensor->config->overcurrent_callback(*sensor->config->context,threshold_current,callback, context);
+    if (err != SYSTEM_OK) {
+        ESP_LOGE(TAG, "Error setting up overcurrent monitoring: %d\n", err);
+        return err; // Handle error in setting up overcurrent monitoring    
+    }
     return SYSTEM_OK;
 }
  
