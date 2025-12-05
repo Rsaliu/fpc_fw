@@ -23,8 +23,8 @@ struct ads1115_t {
     bool is_initialized; // Flag to check if the ADS1115 is initialized
     ads1115_input_channel_t input_channel;          // Current input channel for reading
     i2c_master_bus_handle_t i2c_handle; // I2C handle for communication
-     i2c_master_dev_handle_t i2c_dev_handle; // I2C device handle
-    ads1115_comparator_callback_t comparator_callback; // Callback for comparator alerts
+    i2c_master_dev_handle_t i2c_dev_handle; // I2C device handle
+    overcurrent_comparator_callback_t comparator_callback; // Callback for comparator alerts
     void* comparator_callback_context; // Context for comparator callback
 };
 
@@ -295,11 +295,11 @@ error_type_t get_threshold_buffer(const ads1115_t *ads, const uint16_t threshold
     return SYSTEM_OK;                            // Successfully prepared the threshold buffer
 }
 
-error_type_t ads1115_read_comparator(ads1115_t *ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, ads1115_comparator_callback_t comparator_callback, void* context){
+error_type_t ads1115_read_comparator(ads1115_t *ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, overcurrent_comparator_callback_t comparator_callback, void* context){
     return ads1115_read_comparator_with_channel(ads, high_threshold_value_in_millivolt, low_threshold_value_in_millivolt, comparator_callback, context, ads->input_channel);
 }
 
-error_type_t ads1115_read_comparator_with_channel(ads1115_t *ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, ads1115_comparator_callback_t comparator_callback, void* context,ads1115_input_channel_t input_channel)
+error_type_t ads1115_read_comparator_with_channel(ads1115_t *ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, overcurrent_comparator_callback_t comparator_callback, void* context,ads1115_input_channel_t input_channel)
 {
     if (ads == NULL)
     {

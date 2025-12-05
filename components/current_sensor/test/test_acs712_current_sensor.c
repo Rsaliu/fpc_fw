@@ -6,6 +6,22 @@
 #define ACS712_ZERO_VOLTAGE_DEFAULT 2500 // Default zero voltage for ACS712 converted from 5V to 3.3V range
 #define ACS712_SENSITIVITY 66 // ACS712 Sensitivity for ACS712 5
 acs712_sensor_t* acs712_sensor = NULL;
+const double OVERCURRENT_THRESHOLD_CURRENT = 10; // Example threshold current in Amperes
+
+ void overcurrent_comparator_callback (overcurrent_queue_item_t item){
+    // Dummy callback function for overcurrent monitoring
+    printf("Overcurrent event detected! Timestamp: %ld, Channel: %d\n", item.timestamp, item.channel);
+ }
+
+error_type_t overcurrent_monitor_func_callback (void* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, overcurrent_comparator_callback_t comparator_callback, void* context)
+{
+    // Dummy function to simulate setting up overcurrent monitoring
+    // In a real scenario, this would configure the ADS1115 comparator
+    printf("Setting up overcurrent monitoring with high threshold: %d mV, low threshold: %d mV\n", high_threshold_value_in_millivolt, low_threshold_value_in_millivolt);
+    TEST_ASSERT_EQUAL(high_threshold_value_in_millivolt, 3160); // Example expected high threshold
+    TEST_ASSERT_EQUAL(low_threshold_value_in_millivolt, 1840); // Example expected low threshold
+    return SYSTEM_OK;
+}
 
 error_type_t get_adc_value(void* context, int* adc_voltage) {
     // Dummy function to simulate ADC reading
@@ -21,6 +37,7 @@ acs712_config_t acs712_config = {
     .adc_reader = get_adc_value,
     .context = &dummy_context, // Context for the callback, can be used to pass additional data
     .zero_voltage = 2500, // Zero voltage offset for the sensor
+    .overcurrent_monitor_func = overcurrent_monitor_func_callback
 }; // Initialize with a NULL ADC reader
 // Set up function for ACS712 sensor tests
 void acs712SensorSetUp(void) {
@@ -80,5 +97,15 @@ TEST_CASE("acs712_current_sensor_test", "test_acs712_read_current") {
     printf("Current reading: %f\n", current_value);
     float expected_current = (float)(2048 - ACS712_ZERO_VOLTAGE_DEFAULT) / ACS712_SENSITIVITY; // Assuming 12-bit ADC resolution
     TEST_ASSERT_EQUAL_FLOAT(current_value, expected_current); // Assuming 12-bit ADC resolution
+    acs712SensorTearDown();
+}
+
+
+TEST_CASE("acs712_current_sensor_test", "test_acs712_overcurrent_monitor") {
+    acs712SensorSetUp();
+    error_type_t result = acs712_sensor_init(acs712_sensor);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    result = acs712_monitor_overcurrent(acs712_sensor, OVERCURRENT_THRESHOLD_CURRENT , overcurrent_comparator_callback, NULL);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     acs712SensorTearDown();
 }
