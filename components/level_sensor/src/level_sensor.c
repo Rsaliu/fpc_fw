@@ -5,11 +5,11 @@
 #include <string.h>
 #include "esp_log.h"
 
-struct level_sensor_t
-{
-    level_sensor_config_t *config;
-    bool activate;
-};
+// struct level_sensor_t
+// {
+//     level_sensor_config_t *config;
+//     bool activate;
+// };
 static const int sensor_buffer_size = 50;
 static const int receive_buff_size = 100;
 static const char* TAG = "LEVEL_SENSOR";

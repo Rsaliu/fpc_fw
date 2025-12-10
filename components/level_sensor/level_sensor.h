@@ -3,6 +3,7 @@
 #include <common_headers.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 typedef struct level_sensor_t level_sensor_t;
 
 typedef error_type_t (*protocol_callback_t)( uint8_t slave_addr, uint8_t* buffer, int buff_size, uint8_t* payload_size);
@@ -33,7 +34,10 @@ typedef struct
     level_sensor_protocol_t level_sensor_protocol;
 }level_sensor_config_t;
 
-
+typedef struct level_sensor_t {
+    level_sensor_config_t *config;
+    bool activate;
+} level_sensor_t;
 
 
 

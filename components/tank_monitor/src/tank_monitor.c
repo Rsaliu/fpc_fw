@@ -21,18 +21,18 @@ struct tank_monitor_t {
 };
 
 //dummy level_sensor object
-// error_type_t 
-// level_sensor_get_level_in_mm(level_sensor_t *sensor, int *level) {
-//     ESP_LOGI(TAG, "Checking sensor pointer: %p, level pointer: %p", sensor, level);
-//     if (sensor == NULL || level == NULL) {
-//         return SYSTEM_NULL_PARAMETER; // Handle null sensor or level pointer
-//     }
-//     // Simulate getting the level from the sensor
-//     *level = 100; // Example level in mm
-//     ESP_LOGI(TAG,"Level sensor ID: %d, Current level: %d mm\n", sensor->id, *level);
-//     return SYSTEM_OK;
-// }
-//
+error_type_t 
+level_sensor_get_level_in_mm(level_sensor_t *sensor, int *level) {
+    ESP_LOGI(TAG, "Checking sensor pointer: %p, level pointer: %p", sensor, level);
+    if (sensor == NULL || level == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null sensor or level pointer
+    }
+    // Simulate getting the level from the sensor
+    *level = 100; // Example level in mm
+    ESP_LOGI(TAG,"Level sensor ID: %d, Current level: %d mm\n", sensor->config->id, *level);
+    return SYSTEM_OK;
+}
+
 
 tank_monitor_t* tank_monitor_create(tank_monitor_config_t config) {
     tank_monitor_t *monitor = (tank_monitor_t *)malloc(sizeof(tank_monitor_t));

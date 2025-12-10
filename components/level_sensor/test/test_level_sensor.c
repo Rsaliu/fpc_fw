@@ -32,6 +32,10 @@ void level_sensor_setup(void){
     }
     protocol_callback_t protocol = protocol_gl_a01_read_level;
     send_receive_t send_receive =  dummy_context_Send_receive;
+
+    //Uncomment when using Hardware
+    // send_receive_t send_receive = rs485_context_send_receive;
+
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
     level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
                                        .send_recive = send_receive,
@@ -118,7 +122,8 @@ TEST_CASE("level_sensor_test", "test_level_sensor_destroy"){
 //     error_type_t test_result;
 //     uint16_t level_read_data;
 //     test_result = level_sensor_init(level_Sensor);
-//     for (;;) // forever for loop
+//     vTaskDelay(1000);
+//     for (int i = 1; i <= 5; i++) // forever for loop
 //     {
 //         test_result = level_sensor_read(level_Sensor, &level_read_data);
 //         TEST_ASSERT_EQUAL(SYSTEM_OK, test_result);
