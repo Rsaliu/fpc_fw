@@ -138,3 +138,29 @@ error_type_t acs712_read_current(const acs712_sensor_t* sensor, float* current){
     ESP_LOGI(TAG, "Current reading: %.2f A", *current);
     return SYSTEM_OK;
 }
+
+error_type_t acs712_monitor_overcurrent(const acs712_sensor_t* sensor, float threshold_current, overcurrent_comparator_callback_t callback, void* context){
+    if (!sensor) {
+        ESP_LOGE(TAG, "NULL sensor pointer");
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (!sensor->is_initialized) {
+        ESP_LOGE(TAG, "Sensor not initialized");
+        return SYSTEM_INVALID_STATE;
+    }
+    if (!callback) {
+        ESP_LOGE(TAG, "NULL callback pointer");
+        return SYSTEM_NULL_PARAMETER;
+    }
+
+    uint16_t high_threshold = (int)(threshold_current * ACS712_SENSITIVITY) + sensor->config->zero_voltage;
+    uint16_t low_threshold = sensor->config->zero_voltage - (int)(threshold_current * ACS712_SENSITIVITY);
+
+    error_type_t err = sensor->config->overcurrent_monitor_func(*sensor->config->context, high_threshold, low_threshold, callback, context);
+    if (err != SYSTEM_OK) {
+        ESP_LOGE(TAG, "Failed to set up overcurrent monitoring");
+        return err;
+    }
+
+    return SYSTEM_OK;
+}

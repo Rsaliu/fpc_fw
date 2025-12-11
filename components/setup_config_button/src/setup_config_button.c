@@ -1,57 +1,45 @@
 #include <stdio.h>
-#include <setup_config_button.h>
 #include <stdlib.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include <setup_config_button.h>
 #include "freertos/event_groups.h"
 #include "driver/gpio.h"
 #include "esp_intr_types.h"
 #include "esp_log.h"
+#include "example.h"
 
-#define BUTTON_FLAG_BIT0 (1 << 0)
-
-static EventGroupHandle_t button_event;
-static const char*TAG = "SETUP_CONFIG_BUTTON";
+static const char*BUTTON_TAG = "SETUP_CONFIG_BUTTON";
 
 static void IRAM_ATTR setup_config_button_isr_handler(void*arg){
-    BaseType_t xHigherPriorityTaskWoken,xResult;
+    BaseType_t xHigherPriorityTaskWoken;
     xHigherPriorityTaskWoken = pdFALSE;
-    xResult = xEventGroupSetBitsFromISR(button_event, BUTTON_FLAG_BIT0, &xHigherPriorityTaskWoken);
-
-    if(xResult != pdFALSE){
-
-    portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
-    }
-    
+    esp_restart();
+    if ( xHigherPriorityTaskWoken )
+    {
+        portYIELD_FROM_ISR();
+    }     
 }
 
-void setup_config_button_task(void* Pvparameter){
-    setup_config_button_config_t*config = (setup_config_button_config_t*)Pvparameter;
-    EventBits_t event_bit;
-    while (1)
+error_type_t setup_config_button_two_event(setup_config_button_config_t*config){
+    int button_level = gpio_get_level(config->button_pin_number);
+    if (button_level == 0)
     {
-        event_bit = xEventGroupWaitBits(button_event, BUTTON_FLAG_BIT0,pdTRUE,pdFALSE,portMAX_DELAY);
-        if ((event_bit & BUTTON_FLAG_BIT0) != 0)
-        {
-            ESP_LOGI(TAG, "button pressed !!!\n");
-            error_type_t err = config->config_button();
-            if (err != SYSTEM_OK)
-            {
-                ESP_LOGE(TAG, "configuration failed\n");
-            }
-        } 
+        ESP_LOGI(BUTTON_TAG, "button pressed: start webserver\n.");
+        xTaskCreate(config->webserver, "websever_task",4096,NULL,1,NULL);
+        
+    }else
+    {
+
+        ESP_LOGI(BUTTON_TAG, "button release: continue other task");
+        tank_monitor_task_appMain();
+        
     }
+
+    return SYSTEM_OK;
 }
 
 void setup_config_button_init(setup_config_button_config_t* config){
-    button_event = xEventGroupCreate();
-    if (button_event == NULL)
-    {
-        ESP_LOGE(TAG, "failed to create event group\n");
-    }
-    
     gpio_config_t  io_config = {};
-    io_config.intr_type = GPIO_INTR_POSEDGE;
+    io_config.intr_type = GPIO_INTR_ANYEDGE;
     io_config.mode = GPIO_MODE_INPUT;
     io_config.pin_bit_mask = (1ULL << config->button_pin_number);
     io_config.pull_up_en = GPIO_PULLUP_ENABLE;

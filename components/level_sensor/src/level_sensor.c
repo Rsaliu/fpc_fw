@@ -124,32 +124,6 @@ error_type_t level_sensor_destroy(level_sensor_t **level_sensor_obj)
     return SYSTEM_OK;
 }
 
-level_sensor_interface_t string_to_level_sensor_interface(const char* interface_str){
-    if (strcmp(interface_str, "RS485") == 0)
-    {
-        return LEVEL_SENSOR_INTERFACE_RS485;
-    }else if (strcmp(interface_str, "UART") == 0)
-    {
-        return LEVEL_SENSOR_INTERFACE_UART;
-    }else if (strcmp(interface_str, "PWM") == 0)
-    {
-        return LEVEL_SENSOR_INTERFACE_PWM;
-    }else
-    {
-        return LEVEL_SENSOR_INTERFACE_RS485;
-    }
-       
-}
 
-level_sensor_protocol_t string_to_level_sensor_protocol(const char* protocol_str){
-    if (strcmp(protocol_str, "GL_A01_PROTOCOL") == 0)
-    {
-        return GL_A01_PROTOCOL;
-    }else
-    {
-        printf("Unknow\n");
-        return GL_A01_PROTOCOL;
-    }
-}
 
 

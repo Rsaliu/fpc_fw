@@ -39,8 +39,7 @@ void level_sensor_setup(void){
     protocol_interpreter_t interpret = protocol_gl_a01_interpreter;
     level_sensor_config_t config = {.id = 4, .sensor_addr= 0x01, .protocol= protocol, .medium_context = rs485_obj, 
                                        .send_recive = send_receive,
-                                       .interpreter = interpret,
-                                    LEVEL_SENSOR_INTERFACE_RS485, GL_A01_PROTOCOL };
+                                       .interpreter = interpret};
     level_Sensor = level_sensor_create(config);
 }
 
