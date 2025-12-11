@@ -58,7 +58,7 @@ void tank_monitor_task(void *pvParameter)
         .callback  = tank_event_callback};
 
     int event_id;
-    tank_monitor_subscribe_event(config->tank_monitor[i], &hook, &event_id);
+    tank_monitor_subscribe_state_event(config->tank_monitor[i], &hook, &event_id);
     ESP_LOGI(TAG, "Subscribed to monitor[%d] relay_id [%d] with event_id %d", i, relay_cfg.id, event_id);
   }
 

@@ -281,7 +281,7 @@ error_type_t pump_control_add_relay_to_tank_monitor(pump_control_unit_t *manager
         return SYSTEM_INVALID_PARAMETER; // Tank monitor not found
     }
     tank_monitor_t *tank_monitor = (tank_monitor_t *)map_entry->value;
-    error_type_t err = tank_monitor_subscribe_event(tank_monitor, &hook, &event_id);
+    error_type_t err = tank_monitor_subscribe_state_event(tank_monitor, &hook, &event_id);
     if (err != SYSTEM_OK) {
         return err; // Handle error in subscribing to the event
     }
@@ -332,7 +332,7 @@ error_type_t pump_control_unit_remove_relay_from_tank_monitor(pump_control_unit_
     }
     tank_monitor_t *tank_monitor = (tank_monitor_t *)map_entry->value;
     // Unsubscribe from the tank monitor event
-    error_type_t err = tank_monitor_unsubscribe_event(tank_monitor, event_id);
+    error_type_t err = tank_monitor_unsubscribe_state_event(tank_monitor, event_id);
     if (err != SYSTEM_OK) {
         return err; // Handle error in unsubscribing from the event
     }

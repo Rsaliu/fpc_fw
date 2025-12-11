@@ -31,7 +31,7 @@ void subscriber_event_task(void *Pvparameter)
         ESP_LOGE(TAG, "Invalid subscriber, monitor or event_hook\n ");
     }
 
-    error_type_t err = tank_monitor_subscribe_event(subscriber->monitor, &subscriber->event_hook, &subscriber->event_id);
+    error_type_t err = tank_monitor_subscribe_state_event(subscriber->monitor, &subscriber->event_hook, &subscriber->event_id);
     if (err == SYSTEM_OK)
     {
         ESP_LOGI(TAG, "subscribtion to monitor and Event_id= %d is sucessfull",subscriber->event_id);

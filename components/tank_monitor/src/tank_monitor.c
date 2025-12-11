@@ -21,18 +21,18 @@ struct tank_monitor_t {
 };
 
 //dummy level_sensor object
-// error_type_t 
-// level_sensor_get_level_in_mm(level_sensor_t *sensor, int *level) {
-//     ESP_LOGI(TAG, "Checking sensor pointer: %p, level pointer: %p", sensor, level);
-//     if (sensor == NULL || level == NULL) {
-//         return SYSTEM_NULL_PARAMETER; // Handle null sensor or level pointer
-//     }
-//     // Simulate getting the level from the sensor
-//     *level = 100; // Example level in mm
-//     ESP_LOGI(TAG,"Level sensor ID: %d, Current level: %d mm\n", sensor->id, *level);
-//     return SYSTEM_OK;
-// }
-//
+error_type_t 
+level_sensor_get_level_in_mm(level_sensor_t *sensor, int *level) {
+    ESP_LOGI(TAG, "Checking sensor pointer: %p, level pointer: %p", sensor, level);
+    if (sensor == NULL || level == NULL) {
+        return SYSTEM_NULL_PARAMETER; // Handle null sensor or level pointer
+    }
+    // Simulate getting the level from the sensor
+    *level = 100; // Example level in mm
+    ESP_LOGI(TAG,"Level sensor ID: %d, Current level: %d mm\n", sensor->config->id, *level);
+    return SYSTEM_OK;
+}
+
 
 tank_monitor_t* tank_monitor_create(tank_monitor_config_t config) {
     tank_monitor_t *monitor = (tank_monitor_t *)malloc(sizeof(tank_monitor_t));
@@ -203,10 +203,10 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id)
+error_type_t tank_monitor_subscribe_state_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id)
 {
     if (monitor == NULL || hook == NULL || event_id == NULL) {
-        ESP_LOGE(TAG,"Error: Null parameter in tank_monitor_subscribe_event\n");
+        ESP_LOGE(TAG,"Error: Null parameter in tank_monitor_subscribe_state_event\n");
         return SYSTEM_NULL_PARAMETER; // Handle null monitor, callback, or event_id pointer
     }
     ESP_LOGI(TAG,"monitor pointer: %p, hook pointer: %p, event_id pointer: %p\n", monitor, hook, event_id);
@@ -238,7 +238,7 @@ error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_mo
 
     return SYSTEM_OK;
 }
-error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id){
+error_type_t tank_monitor_unsubscribe_state_event(tank_monitor_t *monitor,int event_id){
     if (monitor == NULL || event_id < 0 || event_id >= monitor->subscriber_count) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or invalid event_id
     }
