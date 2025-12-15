@@ -2,10 +2,12 @@
 #include <unity.h>
 #include <freertos/FreeRTOS.h>
 QueueHandle_t overcurrent_event_queue;
+QueueHandle_t measure_complete_event_queue;
+TickType_t previous_time;
 bool done_flag = false;
 SemaphoreHandle_t xMutex;
 ads1115_t *ads1115_object = NULL;
-    ads1115_config_t ads_config = {
+    ads1115_config_t ads_config_oneshot = {
     .i2c_port = I2C_NUM_1,                         // Use I2C port 0
     .sda_gpio = GPIO_NUM_21,                       // SDA pin
     .scl_gpio = GPIO_NUM_22,                       // SCL pin
@@ -16,20 +18,60 @@ ads1115_t *ads1115_object = NULL;
     .enable_pullup = 1,                            // Enable pull-up resistors
     .i2c_address = ADDR_GROUNDED,                  // Use grounded address
     .pga_mode = ADS1115_PGA_6_144V,   
+    .measurement_mode = ADS1115_MEASUREMENT_ONE_SHOT
+    };
+
+    ads1115_config_t ads_config_overcurrent = {
+    .i2c_port = I2C_NUM_1,                         // Use I2C port 0
+    .sda_gpio = GPIO_NUM_21,                       // SDA pin
+    .scl_gpio = GPIO_NUM_22,                       // SCL pin
+    .alert_ready_pin = GPIO_NUM_34,                // ALERT/READY pin
+    .frequency_hz = 100000,                        // I2C frequency
+    .clock_source = I2C_CLK_SRC_DEFAULT,           // Default clock source
+    .glitch_ignore_cnt = 0,                        // No glitch ignore
+    .enable_pullup = 1,                            // Enable pull-up resistors
+    .i2c_address = ADDR_GROUNDED,                  // Use grounded address
+    .pga_mode = ADS1115_PGA_6_144V,   
+    .measurement_mode = ADS1115_MEASUREMENT_CONTINUOUS_OVERCURRENT
+    };
+
+    ads1115_config_t ads_config_measurement_ready = {
+    .i2c_port = I2C_NUM_1,                         // Use I2C port 0
+    .sda_gpio = GPIO_NUM_21,                       // SDA pin
+    .scl_gpio = GPIO_NUM_22,                       // SCL pin
+    .alert_ready_pin = GPIO_NUM_34,                // ALERT/READY pin
+    .frequency_hz = 100000,                        // I2C frequency
+    .clock_source = I2C_CLK_SRC_DEFAULT,           // Default clock source
+    .glitch_ignore_cnt = 0,                        // No glitch ignore
+    .enable_pullup = 1,                            // Enable pull-up resistors
+    .i2c_address = ADDR_GROUNDED,                  // Use grounded address
+    .pga_mode = ADS1115_PGA_6_144V,   
+    .measurement_mode = ADS1115_MEASUREMENT_CONTINUOUS_READY
     };
 
 
 void ads1115_teardown();
 
+#ifdef HARDWARE_TESTING_ENABLED
 void create_overcurrent_event_queue(){
     if(overcurrent_event_queue == NULL){
         overcurrent_event_queue = xQueueCreate(10, sizeof(overcurrent_queue_item_t));
     }
 }
 
+void create_measurement_event_queue(){
+    if(measure_complete_event_queue == NULL){
+        measure_complete_event_queue = xQueueCreate(10, sizeof(measurement_item_t));
+    }
+}
+
 void comparator_callback(overcurrent_queue_item_t item){
     //printf("event timestamp: %ld\n", item.timestamp);
     xQueueSendToFrontFromISR(overcurrent_event_queue, &item, NULL);
+}
+void measurement_complete_callback(measurement_item_t item){
+    //printf("Measurement complete callback invoked\n");
+    xQueueSendToFrontFromISR(measure_complete_event_queue, &item, NULL);
 }
 
 
@@ -43,10 +85,16 @@ void spool_overcurrent_event(){
         count++;
         ads1115_t* ads1115_object = (ads1115_t*)item.context;
         int16_t raw_value = 0;
-        
-        error_type_t err = ads1115_read_one_shot_with_channel(ads1115_object, &raw_value, (ads1115_input_channel_t)item.channel);
+        if(count >= 10){
+        xSemaphoreTake( xMutex, portMAX_DELAY ); 
+        done_flag = true;
+        xSemaphoreGive( xMutex );
+        // delete task after 10 events
+        vTaskDelete(NULL);
+        }
+        error_type_t err = ads1115_read_conversion_register(ads1115_object, (ads1115_input_channel_t)item.channel,&raw_value);
         if(err != SYSTEM_OK){
-            printf("Error reading ADS1115 in callback: %d\n", err);
+            printf(" over current Error reading ADS1115 in callback: %d\n", err);
             continue;
         }
         TickType_t current_time = xTaskGetTickCount();
@@ -55,11 +103,23 @@ void spool_overcurrent_event(){
         printf("Error re-arming comparator in callback: %d\n", err);
         printf("Time since last event: %ld ticks\n", diff_time);
         printf("Comparator re-armed successfully in callback\n");
-        err = ads1115_read_comparator_with_channel(ads1115_object, 3000, 2000, comparator_callback, item.callers_context, (ads1115_input_channel_t)item.channel);
-        if(err != SYSTEM_OK){
-            printf("Error re-arming comparator in callback: %d\n", err);
-            continue;
-        }
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+    }
+}
+}
+
+
+void spool_measurement_event(){
+    // get items from queue until empty
+    measurement_item_t item;
+    uint8_t count = 0;
+    while(1){
+    while(xQueueReceive(measure_complete_event_queue, &item, pdMS_TO_TICKS(1000)) == pdTRUE){
+        TickType_t current_time = xTaskGetTickCount();
+        TickType_t diff_time = current_time - previous_time;
+        count++;
+        ads1115_t* ads1115_object = (ads1115_t*)item.context;
+        int16_t raw_value = 0;
         if(count >= 10){
             xSemaphoreTake( xMutex, portMAX_DELAY ); 
             done_flag = true;
@@ -67,14 +127,24 @@ void spool_overcurrent_event(){
             // delete task after 10 events
             vTaskDelete(NULL);
         }
+        error_type_t err = ads1115_read_conversion_register(ads1115_object, (ads1115_input_channel_t)item.channel, &raw_value);
+        if(err != SYSTEM_OK){
+            printf("continuous measurement Error reading ADS1115 in callback: %d\n", err);
+            continue;
+        }
+        printf("ADS1115 read value in callback: %d\n", raw_value);
+        printf("Time since last event: %ld ticks\n", diff_time);
+        previous_time = xTaskGetTickCount();
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 }
 }
+
+#endif
+
 void ads1115_setup(){
-    create_overcurrent_event_queue();
     ads1115_teardown();
-    ads1115_object = ads1115_create(&ads_config);
+    ads1115_object = ads1115_create(&ads_config_oneshot);
     TEST_ASSERT_NOT_NULL(ads1115_object);
 }
 
@@ -129,32 +199,77 @@ TEST_CASE("ads1115_test", "test_ads1115_read") {
 }
 
 
-TaskHandle_t spoolTaskHandle;
+#ifdef HARDWARE_TESTING_ENABLED
+TaskHandle_t overcurrentSpoolTaskHandle;
 
-void startPoolingTask(){
+void startOvercurrentSpoolingTask(){
     xTaskCreate(
         (TaskFunction_t)spool_overcurrent_event,   // Function that implements the task.
         "SpoolOvercurrentEvent",        // Text name for the task.
         4096,                           // Stack size in bytes, not words.
         NULL,                           // Parameter passed into the task.
         tskIDLE_PRIORITY,               // Priority at which the task is created.
-        &spoolTaskHandle);              // Used to pass out the created task's handle.
+        &overcurrentSpoolTaskHandle);              // Used to pass out the created task's handle.
+}
+
+TaskHandle_t measurementSpoolTaskHandle;
+
+void startMeasurementSpoolingTask(){
+    xTaskCreate(
+        (TaskFunction_t)spool_measurement_event,   // Function that implements the task.
+        "SpoolOvercurrentEvent",        // Text name for the task.
+        4096,                           // Stack size in bytes, not words.
+        NULL,                           // Parameter passed into the task.
+        tskIDLE_PRIORITY,               // Priority at which the task is created.
+        &measurementSpoolTaskHandle);              // Used to pass out the created task's handle.
 }
 
 int dummy= 10;
 
 // only run this test if ads1115 alert pin is connected to MCU and overcurrent condition can be simulated
-#if 0
 TEST_CASE("ads1115_test", "test_ads1115_read_comparator") {
-    ads1115_setup();
+    done_flag = false;
+    create_overcurrent_event_queue();
+    ads1115_teardown();
+    ads1115_object = ads1115_create(&ads_config_overcurrent);
+    TEST_ASSERT_NOT_NULL(ads1115_object);
      xMutex = xSemaphoreCreateMutex();
-    startPoolingTask();
     error_type_t result = ads1115_init(ads1115_object);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    startOvercurrentSpoolingTask();
     printf("about to read ADC value\n");
     result = ads1115_set_read_channel(ads1115_object, ADS1115_CHANNEL_0);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     result = ads1115_read_comparator(ads1115_object, 3000, 2000, comparator_callback, (void*)&dummy);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    while(1){
+        xSemaphoreTake( xMutex, portMAX_DELAY ); 
+        if(done_flag){
+            xSemaphoreGive( xMutex );
+            break;
+        }
+        xSemaphoreGive( xMutex );
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    ads1115_teardown();
+}
+
+
+TEST_CASE("ads1115_test", "test_ads1115_read_continuous") {
+    done_flag = false;
+    create_measurement_event_queue();
+    ads1115_teardown();
+    ads1115_object = ads1115_create(&ads_config_measurement_ready);
+    TEST_ASSERT_NOT_NULL(ads1115_object);
+     xMutex = xSemaphoreCreateMutex();
+    error_type_t result = ads1115_init(ads1115_object);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    startMeasurementSpoolingTask();
+    printf("about to read ADC value\n");
+    result = ads1115_set_read_channel(ads1115_object, ADS1115_CHANNEL_0);
+    TEST_ASSERT_EQUAL(SYSTEM_OK, result);
+    previous_time = xTaskGetTickCount();
+    result = ads1115_read_continuous(ads1115_object, measurement_complete_callback, (void*)&dummy);
     TEST_ASSERT_EQUAL(SYSTEM_OK, result);
     while(1){
         xSemaphoreTake( xMutex, portMAX_DELAY ); 
