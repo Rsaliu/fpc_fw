@@ -86,6 +86,12 @@ typedef enum{
     ADD_SDA = 0x4B, // SDA address
 }ads1115_addr_t;
 
+typedef enum{
+    ADS1115_MEASUREMENT_ONE_SHOT = 0,
+    ADS1115_MEASUREMENT_CONTINUOUS_OVERCURRENT = 1,
+    ADS1115_MEASUREMENT_CONTINUOUS_READY = 2
+}ads1115_measurement_mode_t;
+
 typedef struct {
     i2c_port_t i2c_port; // I2C port number
     gpio_num_t sda_gpio; // SDA GPIO pin
@@ -97,6 +103,7 @@ typedef struct {
     uint32_t enable_pullup; // Enable pull-up resistors
     ads1115_addr_t i2c_address; // Address connection type
     ads1115_pga_mode_t pga_mode; // Programmable Gain Amplifier mode
+    ads1115_measurement_mode_t measurement_mode; // Measurement mode
 } ads1115_config_t;
 
 typedef struct ads1115_t ads1115_t;
@@ -108,6 +115,9 @@ error_type_t ads1115_read_one_shot(const ads1115_t* ads, int16_t* raw_value);
 error_type_t ads1115_read_one_shot_with_channel(const ads1115_t* ads, int16_t* raw_value, ads1115_input_channel_t input_channel);
 error_type_t ads1115_read_comparator(ads1115_t* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, overcurrent_comparator_callback_t comparator_callback, void* context);
 error_type_t ads1115_read_comparator_with_channel(ads1115_t* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, overcurrent_comparator_callback_t comparator_callback, void* context, ads1115_input_channel_t input_channel);
+error_type_t ads1115_read_continuous(ads1115_t* ads, measurement_complete_callback_t comparator_callback, void* context);
+error_type_t ads1115_read_continuous_with_channel(ads1115_t* ads, measurement_complete_callback_t measurement_callback, void* context,ads1115_input_channel_t input_channel);
+error_type_t ads1115_read_conversion_register(ads1115_t* ads, ads1115_input_channel_t input_channel, int16_t* raw_value);
 error_type_t ads1115_deinit(ads1115_t* ads);
 error_type_t ads1115_destroy(ads1115_t** ads);
 

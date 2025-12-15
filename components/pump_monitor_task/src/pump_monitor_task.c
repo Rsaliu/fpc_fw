@@ -135,7 +135,7 @@ static void pump_monitor_task(void *pvParameters)
         return;
     }
 
-    acs_config.adc_reader = adc_reader_cb;
+    acs_config.callback_func = adc_reader_cb;
     acs_config.context = (void**)&objects.context;
     objects.acs = acs712_create(&acs_config);
     if (objects.acs == NULL || acs712_sensor_init(objects.acs) != SYSTEM_OK)
@@ -158,7 +158,7 @@ static void pump_monitor_task(void *pvParameters)
     current_sensor_config_t cs_config = {
         .id = cs_id,
         .context = (void **)&objects.acs, // Cast to void** here as well
-        .read_current = current_sensor_ac712_read_callback
+        .callback = (void*)current_sensor_ac712_read_callback
     };
     objects.cs = current_sensor_create(&cs_config);
     if (objects.cs == NULL || current_sensor_init(objects.cs) != SYSTEM_OK)
