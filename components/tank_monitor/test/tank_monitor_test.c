@@ -9,7 +9,7 @@
 #include <protocol.h>
 
 tank_monitor_t *monitor = NULL;
-static const char *TAG = "TANK_MONITOR";
+static const char* TAG = "TANK_MONITOR";
 rs485_t *m_rs485_obj;
 level_sensor_t *m_level_sensor;
 
@@ -50,7 +50,14 @@ void tankMonitorSetUp(void) {
     config.tank = tank_create((tank_config_t){1, 1000.0, TANK_SHAPE_RECTANGLE, 100.0, 90, 10});
     //config.sensor = (level_sensor_t *)malloc(sizeof(level_sensor_t));
     rs485_config_t rs485_config = {2, 17, 16, 5, 9600};
-    rs485_t* rs485_obj = rs485_create(&rs485_config);
+    m_rs485_obj = rs485_create(&rs485_config);
+    if(!m_rs485_obj){
+        exit(1);
+    }
+    err = rs485_init(m_rs485_obj);
+    if(err != SYSTEM_OK){
+        exit(1);
+    }
     protocol_callback_t protocol = protocol_gl_a01_read_level;
     #ifndef HARDWARE_TESTING_ENABLED
         send_receive_t send_receive =  dummy_context_Send_receive; //replace with the real context_send_receive
