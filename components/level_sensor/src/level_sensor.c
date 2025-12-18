@@ -51,6 +51,13 @@ error_type_t level_sensor_read(level_sensor_t *level_sensor_obj, uint16_t* read_
     }
     if (!level_sensor_obj->activate)
         return SYSTEM_INVALID_STATE;
+    if (level_sensor_obj->config->read_cb)
+    {
+        return level_sensor_obj->config->read_cb(
+            level_sensor_obj->config->read_cb_context,
+            read_level
+        );
+    }
     uint8_t buffer[sensor_buffer_size];
     uint8_t payload_size = 0; // store the amount of send data
     uint8_t receive_buff[receive_buff_size];
