@@ -20,19 +20,6 @@ struct tank_monitor_t {
     int subscriber_count; // Count of subscribers
 };
 
-//dummy level_sensor object
-// error_type_t 
-// level_sensor_get_level_in_mm(level_sensor_t *sensor, int *level) {
-//     ESP_LOGI(TAG, "Checking sensor pointer: %p, level pointer: %p", sensor, level);
-//     if (sensor == NULL || level == NULL) {
-//         return SYSTEM_NULL_PARAMETER; // Handle null sensor or level pointer
-//     }
-//     // Simulate getting the level from the sensor
-//     *level = 100; // Example level in mm
-//     ESP_LOGI(TAG,"Level sensor ID: %d, Current level: %d mm\n", sensor->id, *level);
-//     return SYSTEM_OK;
-// }
-//
 
 tank_monitor_t* tank_monitor_create(tank_monitor_config_t config) {
     tank_monitor_t *monitor = (tank_monitor_t *)malloc(sizeof(tank_monitor_t));
@@ -134,12 +121,15 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
     if (monitor == NULL || monitor->config == NULL || monitor->config->sensor == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or sensor
     }
+    if (monitor->config->read_cb == NULL){
+        return SYSTEM_INVALID_PARAMETER;
+    }
 
     // Simulate checking the level sensor
     uint16_t current_level;
      ESP_LOGI(TAG, " calling level sensor get level in mm");
-    error_type_t err = level_sensor_read(monitor->config->sensor, &current_level);
-   
+   error_type_t err = monitor->config->read_cb(monitor->config->read_cb_context,&current_level);
+
     if(err != SYSTEM_OK) {
         ESP_LOGE(TAG, "failed to get level");
         return err; // Handle error in getting level from sensor
