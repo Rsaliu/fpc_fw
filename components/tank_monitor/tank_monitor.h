@@ -6,11 +6,6 @@
 #include "level_sensor.h"
 #include <event.h>
 
-// dummy level sensor object
-// typedef struct {
-//     int id; // Unique identifier for the sensor
-// } level_sensor_t;
-// // dummy level sensor functions
 
 typedef enum{
     TANK_MONITOR_EVENT_TANK_FULL = 0, // Event when the tank is full
@@ -29,6 +24,8 @@ typedef struct{
     int id; // Unique identifier for the tank monitor
     tank_t *tank; // Pointer to the tank being monitored
     level_sensor_t *sensor; // Pointer to the level sensor
+    level_sensor_read_cb_t read_cb;
+    void *read_cb_context;
 }tank_monitor_config_t;
 
 typedef enum {
@@ -38,6 +35,7 @@ typedef enum {
 
 typedef struct tank_monitor_t tank_monitor_t;
 typedef void (*tank_monitor_event_callback_t)(void* context,int actuator_id, event_type_t state,int monitor_id);
+typedef error_type_t (*level_sensor_read_cb_t)(void *context, uint16_t *level_mm); 
 
 typedef struct {
     void *context; // Context for the callback, can be used to pass additional data
