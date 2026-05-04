@@ -1,6 +1,7 @@
 #include "driver/gpio.h"
 #include "relay_driver.h"
 #include <stdlib.h>
+#include <esp_log.h>
 
 
 // Relay object structure
@@ -82,29 +83,7 @@ error_type_t relay_deinit(relay_t *relay){
     return SYSTEM_OK;
 
 }
-error_type_t relay_switch(relay_t *relay, relay_state_t state)
-{
-    if (relay == NULL)
-    {
-        return SYSTEM_NULL_PARAMETER;
-    }
-    if (!relay->initialized)
-    {
-        return SYSTEM_INVALID_STATE;
-    }
 
-    if (state == RELAY_ON)
-    {
-        gpio_set_level(relay->pin, 1);
-    }
-    else
-    {
-        gpio_set_level(relay->pin, 0);
-    }
-
-    relay->state = state;
-    return SYSTEM_OK;
-}
 
 error_type_t relay_check_state(const relay_t *relay, relay_state_t *state)
 {
@@ -128,5 +107,86 @@ error_type_t relay_destroy(relay_t **relay)
     }
     free(*relay);
     *relay = NULL;
+    return SYSTEM_OK;
+}
+
+error_type_t relay_trip(relay_t *relay){
+    if (relay == NULL)
+    {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (!relay->initialized)
+    {
+        return SYSTEM_INVALID_STATE;
+    }
+    if(relay->state == RELAY_TRIPPED){
+        ESP_LOGW("RELAY", "Attempting to trip relay with ID %d that is already tripped. No action taken.", relay->id);
+        return SYSTEM_OK; // Relay is already tripped, no action needed
+    }
+    gpio_set_level(relay->pin, 0); // Set pin LOW (relay OFF)
+    relay->state = RELAY_TRIPPED;
+    return SYSTEM_OK;
+}
+
+error_type_t relay_on(relay_t *relay){
+    if (relay == NULL)
+    {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (!relay->initialized)
+    {
+        return SYSTEM_INVALID_STATE;
+    }
+    if(relay->state == RELAY_TRIPPED){
+        ESP_LOGW("RELAY", "Attempting to turn ON relay with ID %d that is currently tripped. Please reset the relay before turning it ON.", relay->id);
+        return SYSTEM_INVALID_STATE;
+    }
+    gpio_set_level(relay->pin, 1); // Set pin HIGH (relay ON)
+    relay->state = RELAY_ON;
+    return SYSTEM_OK;
+}
+error_type_t relay_off(relay_t *relay){
+    if (relay == NULL)
+    {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (!relay->initialized)
+    {
+        return SYSTEM_INVALID_STATE;
+    }
+    if(relay->state == RELAY_TRIPPED){
+        ESP_LOGW("RELAY", "Attempting to turn OFF relay with ID %d that is currently tripped. Please reset the relay before turning it OFF.", relay->id);
+        return SYSTEM_INVALID_STATE;
+    }
+    gpio_set_level(relay->pin, 0); // Set pin LOW (relay OFF)
+    relay->state = RELAY_OFF;
+    return SYSTEM_OK;
+}
+
+error_type_t relay_reset(relay_t *relay){
+    if (relay == NULL)
+    {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (!relay->initialized)
+    {
+        return SYSTEM_INVALID_STATE;
+    }
+    gpio_set_level(relay->pin, 0); // Set pin LOW (relay OFF)
+    relay->state = RELAY_OFF;
+    return SYSTEM_OK;
+}
+
+error_type_t relay_reset_and_on(relay_t *relay){
+    if (relay == NULL)
+    {
+        return SYSTEM_NULL_PARAMETER;
+    }
+    if (!relay->initialized)
+    {
+        return SYSTEM_INVALID_STATE;
+    }
+    gpio_set_level(relay->pin, 1); // Set pin HIGH (relay ON)
+    relay->state = RELAY_ON;
     return SYSTEM_OK;
 }

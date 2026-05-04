@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-idf_component_register(SRCS "src/pump_monitor.c"
+idf_component_register(SRCS "src/pump_monitor.c" "src/current_analytics.c"
                        INCLUDE_DIRS "."
-                       REQUIRES common pump current_sensor event json
+                       REQUIRES common pump current_sensor event
                        )
 

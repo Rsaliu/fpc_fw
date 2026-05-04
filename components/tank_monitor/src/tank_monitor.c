@@ -5,18 +5,16 @@
 #include "esp_log.h"
 
 #define  TANK_MONITOR_MAXIMUM_SUBSCRIBER 10 // Maximum number of tank subscribers
+#define TANK_MONITOR_MAX_SAMPLE_SIZE 10 // Maximum number of samples for averaging level readings, can be adjusted based on requirements
 
-typedef struct{
-    int id; // Unique identifier for the subscriber
-    tank_monitor_event_hook_t* hook; // Callback function for the subscriber
-}tank_monitor_subscriber_t;
 static const char*TAG = "TANK_MONITOR";
 
 struct tank_monitor_t {
-    tank_monitor_config_t *config; // Pointer to the tank monitor configuration
+    tank_monitor_config_t config; // Pointer to the tank monitor configuration
+    uint16_t sampled_level_values[TANK_MONITOR_MAX_SAMPLE_SIZE]; // Buffer to hold sampled level values for averaging (if applicable)
     tank_monitor_state_t state; // State of the tank monitor
-    tank_state_machine_state_t tank_state; // State of the tank being monitored
-    tank_monitor_subscriber_t* subscribers[TANK_MONITOR_MAXIMUM_SUBSCRIBER]; // Callback for tank state events
+    tank_state_machine_state_t state_machine_state; // State of the tank being monitored
+    tank_monitor_subscriber_t subscribers[TANK_MONITOR_MAXIMUM_SUBSCRIBER]; // Callback for tank state events
     int subscriber_count; // Count of subscribers
 };
 
@@ -39,28 +37,27 @@ tank_monitor_t* tank_monitor_create(tank_monitor_config_t config) {
     if (monitor == NULL) {
         return NULL; // Handle memory allocation failure
     }
-
-    monitor->config = (tank_monitor_config_t *)malloc(sizeof(tank_monitor_config_t));
-    if (monitor->config == NULL) {
-        free(monitor);
-        return NULL; // Handle memory allocation failure
-    }
-
-    memcpy(monitor->config, &config, sizeof(tank_monitor_config_t));
+    monitor->config = config;
     monitor->state = TANK_MONITOR_NOT_INITIALIZED;
-    monitor->tank_state = TANK_STATE_MACHINE_NORMAL_STATE; // Initialize tank state to normal
+    monitor->state_machine_state = TANK_STATE_MACHINE_NORMAL_STATE; // Initialize tank state to normal
     monitor->subscriber_count = 0; // Initialize subscriber count to 0
-
+    for(int i = 0; i < TANK_MONITOR_MAXIMUM_SUBSCRIBER; ++i) {
+        monitor->subscribers[i].id = -1; // Initialize subscriber slots to NULL
+        monitor->subscribers[i].in_use = false; // Mark subscriber slots as not in use
+    }
+     ESP_LOGI(TAG, "Tank monitor created with ID: %d\n", config.id);
     return monitor;
 }
 
 error_type_t tank_monitor_init(tank_monitor_t *monitor) {
-    if (monitor == NULL || monitor->config == NULL) {
+    if (monitor == NULL || monitor->config.tank == NULL || monitor->config.sensor == NULL || monitor->config.level_read_cb == NULL || monitor->config.analytics_cb == NULL) {
+        ESP_LOGE(TAG, "Null parameter in tank monitor configuration: monitor=%p, tank=%p, sensor=%p, level_read_cb=%p, analytics_cb=%p", 
+                 monitor, monitor ? monitor->config.tank : NULL, monitor ? monitor->config.sensor : NULL, monitor ? monitor->config.level_read_cb : NULL, monitor ? monitor->config.analytics_cb : NULL);
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or configuration
     }
-    // Validate the tank configuration
-    if (monitor->config->tank == NULL || monitor->config->sensor == NULL) {
-        return SYSTEM_INVALID_PARAMETER; // Handle invalid configuration
+    if(monitor->config.number_of_samples_for_average <= 0 || monitor->config.number_of_samples_for_average > TANK_MONITOR_MAX_SAMPLE_SIZE) {
+        ESP_LOGE(TAG, "Invalid number of samples for average: %d", monitor->config.number_of_samples_for_average);
+        return SYSTEM_INVALID_PARAMETER; // Handle invalid number of samples for averaging
     }
     if (monitor->state != TANK_MONITOR_NOT_INITIALIZED) {
         return SYSTEM_INVALID_STATE; // Monitor is already initialized
@@ -72,7 +69,7 @@ error_type_t tank_monitor_init(tank_monitor_t *monitor) {
 }
 
 error_type_t tank_monitor_deinit(tank_monitor_t *monitor) {
-    if (monitor == NULL || monitor->config == NULL) {
+    if (monitor == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or configuration
     }
 
@@ -91,8 +88,8 @@ error_type_t tank_monitor_destroy(tank_monitor_t **monitor) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor
     }
 
-    if ((*monitor)->config != NULL) {
-        free((*monitor)->config);
+    if((*monitor)->state != TANK_MONITOR_INITIALIZED) {
+        tank_monitor_deinit(*monitor); // Deinitialize if not already deinitialized
     }
     
     free(*monitor);
@@ -115,7 +112,7 @@ error_type_t tank_monitor_get_config(const tank_monitor_t *monitor, tank_monitor
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or configuration pointer
     }
 
-    memcpy(config, monitor->config, sizeof(tank_monitor_config_t));
+    memcpy(config, &monitor->config, sizeof(tank_monitor_config_t));
     return SYSTEM_OK;
 }
 static event_type_t state_machine_state_to_event(tank_state_machine_state_t state) {
@@ -131,21 +128,28 @@ static event_type_t state_machine_state_to_event(tank_state_machine_state_t stat
     }
 }
 error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
-    if (monitor == NULL || monitor->config == NULL || monitor->config->sensor == NULL) {
+    if (monitor == NULL || monitor->config.sensor == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null monitor or sensor
     }
-
-    // Simulate checking the level sensor
-    uint16_t current_level;
-     ESP_LOGI(TAG, " calling level sensor get level in mm");
-    error_type_t err = level_sensor_read(monitor->config->sensor, &current_level);
-   
-    if(err != SYSTEM_OK) {
-        ESP_LOGE(TAG, "failed to get level");
-        return err; // Handle error in getting level from sensor
+    level_analytics_callback_t analytics_cb = monitor->config.analytics_cb;
+    if(analytics_cb == NULL) {
+        ESP_LOGE(TAG, "Analytics callback is NULL in tank monitor configuration");
+        return SYSTEM_NULL_PARAMETER; // Handle null analytics callback
     }
+     ESP_LOGI(TAG, "Checking tank level for monitor ID: %d\n", monitor->config.id);
+     ESP_LOGI(TAG, "Tank pointer: %p, Sensor pointer: %p\n", monitor->config.tank, monitor->config.sensor);
+    for(int i = 0; i < monitor->config.number_of_samples_for_average; ++i) {
+        error_type_t err = monitor->config.level_read_cb(monitor->config.sensor, &monitor->sampled_level_values[i]);
+        if (err != SYSTEM_OK) {
+            ESP_LOGE(TAG, "Failed to read level from sensor for sample %d: %d", i, err);
+            return err; // Handle error in reading level from sensor
+        }
+            ESP_LOGI(TAG, "Sampled level value for sample %d: %d mm\n", i, monitor->sampled_level_values[i]);
+    }
+     ESP_LOGI(TAG, "Sampled level values:");
+    error_type_t err;
     tank_config_t tank_config;
-    err = tank_get_config(monitor->config->tank, &tank_config); 
+    err = tank_get_config(monitor->config.tank, &tank_config); 
     if(err != SYSTEM_OK) {
         ESP_LOGE(TAG, "failed to get tank");
         return err; // Handle error in getting tank configuration
@@ -154,116 +158,118 @@ error_type_t tank_monitor_check_level(tank_monitor_t *monitor) {
     int low_level = tank_config.low_level_in_mm;
 
     //state machine logic
-    tank_state_machine_state_t previous_state = monitor->tank_state;
-    switch (monitor->tank_state) {
-        case TANK_STATE_MACHINE_NORMAL_STATE:
-            if (current_level >= full_level) {
-                monitor->tank_state = TANK_STATE_MACHINE_FULL_STATE;
-                ESP_LOGI(TAG,"Tank is full\n");
-            } else if (current_level < low_level) {
-                monitor->tank_state = TANK_STATE_MACHINE_LOW_STATE;
-                ESP_LOGI(TAG,"Tank is below low level\n");
-            }
-            break;
-
-        case TANK_STATE_MACHINE_FULL_STATE:
-            if (current_level < full_level) {
-                monitor->tank_state = TANK_STATE_MACHINE_NORMAL_STATE;
-                ESP_LOGI(TAG,"Tank is not full anymore\n");
-            }
-            break;
-
-        case TANK_STATE_MACHINE_LOW_STATE:
-            if (current_level >= low_level) {
-                monitor->tank_state = TANK_STATE_MACHINE_NORMAL_STATE;
-                ESP_LOGI(TAG,"Tank is back to normal state\n");
-            }
-            break;
-
-        default:
-            return SYSTEM_INVALID_STATE; // Invalid state
+    tank_state_machine_state_t previous_state = monitor->state_machine_state;
+    if(!monitor->config.analytics_cb) {
+        ESP_LOGE(TAG, "Analytics callback is NULL in tank monitor configuration");
+        return SYSTEM_NULL_PARAMETER; // Handle null analytics callback
+    }
+    err = analytics_cb(monitor->sampled_level_values, monitor->config.number_of_samples_for_average, full_level, low_level, &monitor->state_machine_state);
+    if(err != SYSTEM_OK) {
+        ESP_LOGE(TAG, "Error in analytics callback: %d", err);
+        return err; // Handle error in analytics callback
     }
 
-    if(monitor->tank_state != previous_state) {
+     ESP_LOGI(TAG, "Tank state machine state: %d\n", monitor->state_machine_state);
+    if(monitor->state_machine_state != previous_state) {
         // Notify subscribers about the state change
         for (int i = 0; i < monitor->subscriber_count; i++) {
-            if (monitor->subscribers[i] != NULL && monitor->subscribers[i]->hook != NULL && monitor->subscribers[i]->hook->callback != NULL) {
-                event_type_t event = state_machine_state_to_event(monitor->tank_state);
-                ESP_LOGI(TAG,"tank state is %d", event);
-                monitor->subscribers[i]->hook->callback(
-                    monitor->subscribers[i]->hook->context,
-                    monitor->subscribers[i]->hook->actuator_id,
-                    state_machine_state_to_event(monitor->tank_state),
-                    monitor->config->id
-                ); // Call the subscriber's callback
-            }
+                if(monitor->subscribers[i].context == NULL){
+                    ESP_LOGE(TAG, "Subscriber context is NULL for subscriber %d", monitor->subscribers[i].id);
+                    continue;
+                }
+
+                if (monitor->subscribers[i].callback) 
+                {
+                    monitor->subscribers[i].callback((monitor->subscribers[i].context),
+                                   state_machine_state_to_event(monitor->state_machine_state),
+                                   monitor->subscribers[i].id);
+                }
+                else
+                {
+                    ESP_LOGW(TAG, "Skipping subscriber %d - no callback assigned", monitor->subscribers[i].id);
+                }
         }
     }
 
     return SYSTEM_OK;
 }
 
-error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id)
+error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_subscriber_t* subscriber,int* event_id)
 {
-    if (monitor == NULL || hook == NULL || event_id == NULL) {
-        ESP_LOGE(TAG,"Error: Null parameter in tank_monitor_subscribe_event\n");
-        return SYSTEM_NULL_PARAMETER; // Handle null monitor, callback, or event_id pointer
-    }
-    ESP_LOGI(TAG,"monitor pointer: %p, hook pointer: %p, event_id pointer: %p\n", monitor, hook, event_id);
-    // Check if the monitor is initialized
-    if (monitor->state != TANK_MONITOR_INITIALIZED) {
-        ESP_LOGE(TAG,"Tank monitor is not initialized\n");
-        return SYSTEM_INVALID_STATE; // Monitor is not initialized
-    }
-    // Check if the maximum number of subscribers is reached
-    if (monitor->subscriber_count >= TANK_MONITOR_MAXIMUM_SUBSCRIBER) {
-        return SYSTEM_BUFFER_OVERFLOW; // Maximum number of subscribers reached
+    if (monitor == NULL || subscriber == NULL || event_id == NULL)
+    {
+        ESP_LOGE(TAG, "Null parameter in monitor_subscribe_event");
+        return SYSTEM_NULL_PARAMETER;
     }
 
-    tank_monitor_subscriber_t *subscriber = (tank_monitor_subscriber_t *)malloc(sizeof(tank_monitor_subscriber_t));
-    if (subscriber == NULL) {
-        return SYSTEM_FAILED; // Handle memory allocation failure
+    if (monitor->state != TANK_MONITOR_INITIALIZED)
+    {
+        ESP_LOGE(TAG, "Pump monitor is not initialized");
+        return SYSTEM_INVALID_STATE;
     }
-    subscriber->id = monitor->subscriber_count; // Assign a unique ID to the subscriber
-    subscriber->hook = (tank_monitor_event_hook_t *)malloc(sizeof(tank_monitor_event_hook_t));
-    if (subscriber->hook == NULL) {
-        free(subscriber); // Free the subscriber if hook allocation fails
-        return SYSTEM_FAILED; // Handle memory allocation failure
+
+    if (monitor->subscriber_count >= TANK_MONITOR_MAXIMUM_SUBSCRIBER)
+    {
+        return SYSTEM_BUFFER_OVERFLOW;
     }
-    // copy using memcpy to avoid issues with pointer assignment
-    memcpy(subscriber->hook, hook, sizeof(tank_monitor_event_hook_t));
-    monitor->subscribers[monitor->subscriber_count++] = subscriber; // Add the subscriber to the list
-    *event_id = subscriber->id; // Return the ID of the newly subscribed event
 
+    /* find first free slot */
+    int slot = -1;
+    for (int i = 0; i < TANK_MONITOR_MAXIMUM_SUBSCRIBER; ++i)
+    {
+        if (!monitor->subscribers[i].in_use) {
+            slot = i;
+            break;
+        }
+    }
 
+    if (slot < 0) {
+        return SYSTEM_BUFFER_OVERFLOW;
+    }
+
+    monitor->subscribers[slot].callback = subscriber->callback;
+    monitor->subscribers[slot].id = slot;
+    monitor->subscribers[slot].in_use = true;
+    monitor->subscribers[slot].context = subscriber->context;
+    monitor->subscriber_count++;
+
+    *event_id = monitor->subscribers[slot].id;
+
+    ESP_LOGI(TAG, "Subscribed event id=%d (slot=%d)", *event_id, slot);
     return SYSTEM_OK;
 }
+
 error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id){
-    if (monitor == NULL || event_id < 0 || event_id >= monitor->subscriber_count) {
-        return SYSTEM_NULL_PARAMETER; // Handle null monitor or invalid event_id
+    if (monitor == NULL)
+    {
+        return SYSTEM_NULL_PARAMETER;
     }
 
-    // Check if the monitor is initialized
-    if (monitor->state != TANK_MONITOR_INITIALIZED) {
-        return SYSTEM_INVALID_STATE; // Monitor is not initialized
+    if (event_id < 0 || event_id >= TANK_MONITOR_MAXIMUM_SUBSCRIBER) {
+        return SYSTEM_INVALID_PARAMETER;
     }
 
-    // Free the subscriber and remove it from the list
-    free(monitor->subscribers[event_id]->hook); // Free the hook
-    free(monitor->subscribers[event_id]);
-    monitor->subscribers[event_id] = NULL;
-
-    // Shift remaining subscribers down
-    for (int i = event_id; i < monitor->subscriber_count - 1; i++) {
-        monitor->subscribers[i] = monitor->subscribers[i + 1];
+    if (monitor->state != TANK_MONITOR_INITIALIZED)
+    {
+        return SYSTEM_INVALID_STATE;
     }
-    monitor->subscriber_count--; // Decrease the count of subscribers
+
+    if (!monitor->subscribers[event_id].in_use) {
+        return SYSTEM_INVALID_PARAMETER; 
+    }
+
+    /* clear the slot */
+    monitor->subscribers[event_id].in_use = false;
+    monitor->subscribers[event_id].id = -1;
+    monitor->subscriber_count--;
+
+    ESP_LOGI(TAG, "Unsubscribed event id=%d", event_id);
 
     return SYSTEM_OK;
 }
 
 error_type_t tank_monitor_print_info(tank_monitor_t* monitor){
-    ESP_LOGI(TAG,"Tank ID: %d\n", monitor->config->id);
+    ESP_LOGI(TAG,"Tank ID: %d\n", monitor->config.id);
     ESP_LOGI(TAG,"Subscriber Count: %d\n",monitor->subscriber_count );
     ESP_LOGI(TAG,"State: %d\n", monitor->state);
     return SYSTEM_OK;
@@ -271,14 +277,12 @@ error_type_t tank_monitor_print_info(tank_monitor_t* monitor){
 
 error_type_t tank_monitor_print_info_into_buffer(tank_monitor_t* monitor,char* buffer, const size_t buffer_size){
     int written = snprintf(buffer,buffer_size, "Tank ID: %d\n Subsciber Count: %d\n State: %d\n",
-       monitor->config->id, monitor->subscriber_count,monitor->state);
+       monitor->config.id, monitor->subscriber_count,monitor->state);
        if (written < 0)return SYSTEM_OPERATION_FAILED;
        
        if ((size_t)written > buffer_size)
        {
             return SYSTEM_BUFFER_OVERFLOW;
        }
-
        return SYSTEM_OK;
-       
 }

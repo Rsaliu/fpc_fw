@@ -8,6 +8,7 @@ typedef struct{
     char * make;
     float power_in_hp;
     float current_rating;
+    float min_working_current;
 } pump_config_t;
 
 

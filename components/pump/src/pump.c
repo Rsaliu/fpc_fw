@@ -96,10 +96,8 @@ error_type_t pump_get_config(const pump_t *pump, pump_config_t *config){
     if (pump == NULL || config == NULL) {
         return SYSTEM_NULL_PARAMETER; // Handle null pump or configuration pointer
     }
-    
     // Copy the pump configuration to the provided config pointer
     memcpy(config, pump->config, sizeof(pump_config_t));
-    
     return SYSTEM_OK;
 }
 
@@ -108,12 +106,14 @@ error_type_t pump_print_info(pump_t* pump){
     ESP_LOGI(TAG,"Make: %s", pump->config->make);
     ESP_LOGI(TAG,"HP-Power: %f", pump->config->power_in_hp);
     ESP_LOGI(TAG,"State: %d", pump->state);
+    ESP_LOGI(TAG,"Current Rating: %f", pump->config->current_rating);
+    ESP_LOGI(TAG,"Min Working Current: %f", pump->config->min_working_current);
     return SYSTEM_OK;
 }
 
 error_type_t pump_print_info_into_buffer(pump_t* pump, char* buffer, const size_t buffer_size){
-    int written = snprintf(buffer, buffer_size, "Pump ID: %d\n Pump Make: %s\n HP Power: %f\n State: %d\n",
-        pump->config->id, pump->config->make, pump->config->power_in_hp, pump->state);
+    int written = snprintf(buffer, buffer_size, "Pump ID: %d\n Pump Make: %s\n HP Power: %f\n State: %d\n Current Rating: %f\n Min Working Current: %f\n",
+        pump->config->id, pump->config->make, pump->config->power_in_hp, pump->state, pump->config->current_rating, pump->config->min_working_current);
         if(written < 0)return SYSTEM_OPERATION_FAILED;
         if ((size_t)written > buffer_size)
         {

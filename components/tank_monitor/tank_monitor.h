@@ -5,12 +5,15 @@
 #include "tank.h"
 #include "level_sensor.h"
 #include <event.h>
+#include <stdbool.h>
 
 // dummy level sensor object
 // typedef struct {
 //     int id; // Unique identifier for the sensor
 // } level_sensor_t;
 // // dummy level sensor functions
+
+typedef error_type_t (*level_sensor_read_callback_t)(void *context, uint16_t* level);
 
 typedef enum{
     TANK_MONITOR_EVENT_TANK_FULL = 0, // Event when the tank is full
@@ -24,11 +27,15 @@ typedef enum{
     TANK_STATE_MACHINE_LOW_STATE = 2, // Tank is below low level
 }tank_state_machine_state_t;
 
+typedef error_type_t (*level_analytics_callback_t)(uint16_t* sampled_level_values, int number_of_samples, int full_level, int low_level, tank_state_machine_state_t* state);
 
 typedef struct{
     int id; // Unique identifier for the tank monitor
     tank_t *tank; // Pointer to the tank being monitored
     level_sensor_t *sensor; // Pointer to the level sensor
+    level_sensor_read_callback_t level_read_cb; // Callback function to read the level from the sensor
+    int number_of_samples_for_average; // Number of samples to average for level reading (if applicable)
+    level_analytics_callback_t analytics_cb; // Callback function for level analytics (if applicable)
 }tank_monitor_config_t;
 
 typedef enum {
@@ -37,13 +44,14 @@ typedef enum {
 } tank_monitor_state_t;
 
 typedef struct tank_monitor_t tank_monitor_t;
-typedef void (*tank_monitor_event_callback_t)(void* context,int actuator_id, event_type_t state,int monitor_id);
+typedef void (*tank_monitor_event_callback_t)(void* context,event_type_t state,int monitor_id);
 
 typedef struct {
-    void *context; // Context for the callback, can be used to pass additional data
-    int actuator_id; // Action ID for the event
+    int id; // Action ID for the event
+    void **context; // Context for the callback, can be used to pass additional data
     tank_monitor_event_callback_t callback; // Callback function for the subscriber
-} tank_monitor_event_hook_t;
+    bool in_use;  
+} tank_monitor_subscriber_t;
 
 tank_monitor_t* tank_monitor_create(tank_monitor_config_t config);
 error_type_t tank_monitor_init(tank_monitor_t *monitor);
@@ -52,7 +60,7 @@ error_type_t tank_monitor_destroy(tank_monitor_t **monitor);
 error_type_t tank_monitor_get_state(const tank_monitor_t *monitor, tank_monitor_state_t *state);
 error_type_t tank_monitor_get_config(const tank_monitor_t *monitor, tank_monitor_config_t *config);
 error_type_t tank_monitor_check_level(tank_monitor_t *monitor);
-error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_event_hook_t* hook,int* event_id);
+error_type_t tank_monitor_subscribe_event(tank_monitor_t *monitor, const tank_monitor_subscriber_t* subscriber,int* event_id);
 error_type_t tank_monitor_unsubscribe_event(tank_monitor_t *monitor,int event_id);
 error_type_t tank_monitor_print_info(tank_monitor_t* monitor);
 error_type_t tank_monitor_print_info_into_buffer(tank_monitor_t* monitor, char* buffer, const size_t buffer_size);

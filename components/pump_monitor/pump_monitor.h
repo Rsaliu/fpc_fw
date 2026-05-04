@@ -5,10 +5,8 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <cJSON.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include <event.h>
 #include "pump.h"
 #include "current_sensor.h"
@@ -16,29 +14,28 @@
 #include "acs712_current_sensor.h"
 #include "ads1115.h"
 #include "current_sensor_context.h"
+#include <current_sensor_common.h>
 
-#define PUMP_MONITOR_MAXIMUM_SUBSCRIBER 10
+// For now pump_monitor only supports continuous monitoring mode, other modes can be added later
 
-typedef enum
-{
-    PUMP_MONITOR_EVENT_CURRENT_NORMAL = 0,
-    PUMP_MONITOR_EVENT_CURRENT_LOW = 1,
-    PUMP_MONITOR_EVENT_OVERCURRENT = 2
-} pump_monitor_event_t;
-
+typedef error_type_t (*current_value_read_callback_t)(void* context,float* current_value);
+typedef error_type_t (*current_sensor_continuous_read_callback_t)(void* sensor, measurement_complete_callback_t callback, void* context);
 typedef enum
 {
     PUMP_STATE_MACHINE_NORMAL_STATE = 0,
     PUMP_STATE_MACHINE_UNDERCURRENT_STATE = 1,
     PUMP_STATE_MACHINE_OVERCURRENT_STATE = 2
 } pump_state_machine_state_t;
-
+typedef error_type_t (*current_analytics_callback_t)(float* sampled_current_values, int number_of_samples, float rated_current, float min_working_current, pump_state_machine_state_t* state);
 
 typedef struct
 {
     int id;                 // Unique identifier for the pump monitor
     pump_t *pump;           // Pointer to the pump being monitored
     current_sensor_t *sensor; // Pointer to the current sensor
+    void* current_read_cb; // Callback function to read current val
+    int number_of_samples_for_average; // Number of samples to average for current reading (if applicable)
+    current_analytics_callback_t analytics_cb; // Callback function for current analytics (if applicable)
 } pump_monitor_config_t;
 
 typedef enum
@@ -49,41 +46,38 @@ typedef enum
 
 
 typedef struct pump_monitor_t pump_monitor_t;
-typedef void (*pump_monitor_event_callback_t)(void* context,int actuator_id, event_type_t state,int monitor_id);
+typedef void (*pump_monitor_event_callback_t)(void* context, event_type_t state,int monitor_id);
 
-typedef struct {
-    void *context; // Context for the callback, can be used to pass additional data
-    int actuator_id; // Action ID for the event
-    pump_monitor_event_callback_t callback; // Callback function for the subscriber
-} pump_monitor_event_hook_t;
+// typedef struct {
+//     void *context; // Context for the callback, can be used to pass additional data
+//     //int actuator_id; // Action ID for the event
+//     pump_monitor_event_callback_t callback; // Callback function for the subscriber
+// } pump_monitor_event_hook_t;
 
 typedef struct
 {
     int id;                          // Unique identifier for the subscriber
-    pump_monitor_event_hook_t hook;  // Hook stored inline (safer)
+    void *context; // Context for the callback, can be used to pass additional data
+    //pump_monitor_event_hook_t hook;  // Hook stored inline (safer)
+    pump_monitor_event_callback_t callback; // Callback function for the subscrib
     bool in_use;                     // whether this slot is occupied
 } pump_monitor_subscriber_t;
 
-struct pump_monitor_t
-{
-    pump_monitor_config_t *config;                                           // Pointer to the pump monitor configuration
-    pump_monitor_state_t state;                                              // State of the pump monitor
-    pump_state_machine_state_t pump_state;                                   // State of the pump being monitored
-    pump_monitor_subscriber_t subscribers[PUMP_MONITOR_MAXIMUM_SUBSCRIBER];   // subscriber slots (inline)
-    int subscriber_count;                                                    // Count of subscribers
-};
+typedef struct pump_monitor_t pump_monitor_t;
 
 pump_monitor_t* pump_monitor_create(pump_monitor_config_t config);
 error_type_t pump_monitor_init(pump_monitor_t *pump_monitor);
 error_type_t pump_monitor_deinit(pump_monitor_t   *pump_monitor);
 error_type_t pump_monitor_destroy(pump_monitor_t   **pump_monitor);
+error_type_t pump_monitor_check_current(pump_monitor_t   *pump_monitor);
+
+
 error_type_t pump_monitor_get_state(const pump_monitor_t   *pump_monitor,  pump_monitor_state_t *state);
 error_type_t pump_monitor_get_config(const pump_monitor_t   *pump_monitor,  pump_monitor_config_t *config);
-error_type_t pump_monitor_check_current(pump_monitor_t   *pump_monitor);
-error_type_t pump_monitor_subscribe_event(pump_monitor_t   *pump_monitor, const pump_monitor_event_hook_t* hook,int* event_id);
-error_type_t pump_monitor_unsubscribe_event(pump_monitor_t  *pump_monitor,int event_id);
 
-/* Keep this prototype so the unit test mock matches it */
-error_type_t current_sensor_get_current(current_sensor_t *sensor, float *current);
+
+// the event_id returned can be used to unsubscribe later, it is an index to the subscriber slot
+error_type_t pump_monitor_subscribe_event(pump_monitor_t   *pump_monitor, const pump_monitor_subscriber_t* subscriber,int* event_id);
+error_type_t pump_monitor_unsubscribe_event(pump_monitor_t  *pump_monitor,int event_id);
 
 #endif // __PUMP_MONITOR_H__

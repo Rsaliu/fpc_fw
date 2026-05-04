@@ -20,11 +20,10 @@ typedef enum{
     ACS712_READ_MODE_CONTINUOUS_MEASUREMENT
 } acs712_read_mode_t;
 typedef struct{
-    void** context; // Context for the callback, can be used to pass additional data
+    void* context; // Context for the callback, can be used to pass additional data
     int zero_voltage; // Zero voltage offset for the sensor
-    void* callback_func; // Placeholder for future callback functions   
     acs712_read_mode_t read_mode; // Reading mode of the sensor
-
+    acs712_reading_callback_t adc_reader; // Callback function to read ADC value
 }acs712_config_t;
 
 
@@ -35,7 +34,7 @@ error_type_t acs712_sensor_init(acs712_sensor_t* sensor);
 error_type_t acs712_sensor_deinit(acs712_sensor_t* sensor);
 error_type_t acs712_destroy(acs712_sensor_t** sensor);
 error_type_t acs712_read_current(const acs712_sensor_t* sensor, float* current);
-error_type_t acs712_monitor_current_window(const acs712_sensor_t* sensor, float max_threshold_current, float min_threshold_current, overcurrent_comparator_callback_t callback, void* context);
-error_type_t acs712_monitor_read_current_with_cb(const acs712_sensor_t* sensor, measurement_complete_callback_t callback, void* context);
-
+// error_type_t acs712_monitor_current_window(const acs712_sensor_t* sensor, float max_threshold_current, float min_threshold_current, overcurrent_comparator_callback_t callback, void* context);
+// error_type_t acs712_monitor_read_current_with_cb(const acs712_sensor_t* sensor, measurement_complete_callback_t callback, void* context);
+// error_type_t acs712_get_current_from_adc_value(const acs712_sensor_t* sensor, const uint16_t adc_voltage, float* current);
 #endif

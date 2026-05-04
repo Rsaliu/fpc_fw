@@ -7,6 +7,9 @@ set(EXTRA_COMPONENT_DIRS
                          "components"
                          )
 
+# Only build `main` and its dependency tree.
+set(COMPONENTS main)
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(fpc)
 

@@ -93,30 +93,23 @@ typedef enum{
 }ads1115_measurement_mode_t;
 
 typedef struct {
-    i2c_port_t i2c_port; // I2C port number
-    gpio_num_t sda_gpio; // SDA GPIO pin
-    gpio_num_t scl_gpio; // SCL GPIO pin
     gpio_num_t alert_ready_pin; // ALERT/READY pin
-    uint32_t frequency_hz; // I2C frequency
-    i2c_clock_source_t clock_source; // Clock source for the I2C bus
-    uint8_t glitch_ignore_cnt; // Number of glitches to ignore
-    uint32_t enable_pullup; // Enable pull-up resistors
-    ads1115_addr_t i2c_address; // Address connection type
+    i2c_master_dev_handle_t i2c_dev_handle; // I2C device handle
+    ads1115_input_channel_t input_channel;          // Current input channel for reading    
     ads1115_pga_mode_t pga_mode; // Programmable Gain Amplifier mode
     ads1115_measurement_mode_t measurement_mode; // Measurement mode
+    overcurrent_comparator_callback_t comparator_callback; // Callback for comparator alerts
+    measurement_complete_callback_t measurement_callback; // Callback for measurement completion
+    void* callback_context_; // Context for comparator callback
 } ads1115_config_t;
 
 typedef struct ads1115_t ads1115_t;
 
 ads1115_t* ads1115_create(const ads1115_config_t* config);
 error_type_t ads1115_init(ads1115_t* ads);
-error_type_t ads1115_set_read_channel(ads1115_t* ads, ads1115_input_channel_t input_channel);
 error_type_t ads1115_read_one_shot(const ads1115_t* ads, int16_t* raw_value);
-error_type_t ads1115_read_one_shot_with_channel(const ads1115_t* ads, int16_t* raw_value, ads1115_input_channel_t input_channel);
-error_type_t ads1115_read_comparator(ads1115_t* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, overcurrent_comparator_callback_t comparator_callback, void* context);
-error_type_t ads1115_read_comparator_with_channel(ads1115_t* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt, overcurrent_comparator_callback_t comparator_callback, void* context, ads1115_input_channel_t input_channel);
-error_type_t ads1115_read_continuous(ads1115_t* ads, measurement_complete_callback_t comparator_callback, void* context);
-error_type_t ads1115_read_continuous_with_channel(ads1115_t* ads, measurement_complete_callback_t measurement_callback, void* context,ads1115_input_channel_t input_channel);
+error_type_t ads1115_read_comparator(ads1115_t* ads, const uint16_t high_threshold_value_in_millivolt, const uint16_t low_threshold_value_in_millivolt);
+error_type_t ads1115_read_continuous(ads1115_t* ads);
 error_type_t ads1115_read_conversion_register(ads1115_t* ads, ads1115_input_channel_t input_channel, int16_t* raw_value);
 error_type_t ads1115_deinit(ads1115_t* ads);
 error_type_t ads1115_destroy(ads1115_t** ads);

@@ -215,6 +215,12 @@ static esp_err_t validate_json_structure(const cJSON *json)
                 ESP_LOGE(TAG, "\"current_rating\" in pumps is missing or not a number");
                 return ESP_FAIL;
             }
+            cJSON *min_working_current = cJSON_GetObjectItem(pump_item, "min_working_current");
+            if (!cJSON_IsNumber(min_working_current))
+            {
+                ESP_LOGE(TAG, "\"min_working_current\" in pumps is missing or not a number");
+                return ESP_FAIL;
+            }
         }
 
         cJSON *relays = cJSON_GetObjectItem(pcu_item, "Relays");
@@ -245,14 +251,40 @@ static esp_err_t validate_json_structure(const cJSON *json)
             }
         }
 
-        cJSON *current_sensors = cJSON_GetObjectItem(pcu_item, "current_sensor");
-        if (!cJSON_IsArray(current_sensors))
+        // validate current sensor
+        // sample schema for current sensor object in pump_monitor
+        /*
+"            \"current_sensor\": [\n"
+"                {\n"
+"                   \"Id\": 1,\n"
+"                   \"interface\": {\n"
+"                                       \"interface\": \"ADS1115_one\",\n"
+"                                       \"channel\": 1\n"
+"                                  },\n"
+"                    \"make\": \"ACS712\",\n"
+"                    \"max_current\": 20,\n"
+"                    \"read_mode\": \"basic\"\n"
+"               },\n"
+"                {\n"
+"                   \"Id\": 2,\n"
+"                   \"interface\": {\n"
+"                                       \"interface\": \"internal_adc\",\n"
+"                                       \"channel\": 0\n"
+"                                  },\n"
+"                   \"make\": \"ACS712\",\n"
+"                   \"max_current\": 20,\n"
+"                   \"read_mode\": \"basic\"\n"
+"               }\n"
+"            ],\n"        
+        */
+        cJSON *current_sensor = cJSON_GetObjectItem(pcu_item, "current_sensor");
+        if (!cJSON_IsArray(current_sensor))
         {
             ESP_LOGE(TAG, "\"current_sensor\" is missing or not an array");
             return ESP_FAIL;
         }
         cJSON *cs_item;
-        cJSON_ArrayForEach(cs_item, current_sensors)
+        cJSON_ArrayForEach(cs_item, current_sensor)
         {
             if (!cJSON_IsObject(cs_item))
             {
@@ -266,25 +298,42 @@ static esp_err_t validate_json_structure(const cJSON *json)
                 return ESP_FAIL;
             }
             cJSON *interface = cJSON_GetObjectItem(cs_item, "interface");
-            if (!cJSON_IsString(interface))
+            if (!cJSON_IsObject(interface))
+            {
+                ESP_LOGE(TAG, "\"interface\" in current_sensor is missing or not an object");
+                return ESP_FAIL;
+            }
+            cJSON *interface_type = cJSON_GetObjectItem(interface, "interface");
+            if (!cJSON_IsString(interface_type))
             {
                 ESP_LOGE(TAG, "\"interface\" in current_sensor is missing or not a string");
                 return ESP_FAIL;
             }
-            cJSON *cs_make = cJSON_GetObjectItem(cs_item, "make");
-            if (!cJSON_IsString(cs_make))
+            cJSON *channel = cJSON_GetObjectItem(interface, "channel");
+            if (!cJSON_IsNumber(channel) || channel->valueint != (int)channel->valuedouble)
+            {
+                ESP_LOGE(TAG, "\"channel\" in current_sensor interface is missing or not an integer");
+                return ESP_FAIL;
+            }
+            cJSON *make = cJSON_GetObjectItem(cs_item, "make");
+            if (!cJSON_IsString(make))
             {
                 ESP_LOGE(TAG, "\"make\" in current_sensor is missing or not a string");
                 return ESP_FAIL;
             }
-            cJSON *max_current = cJSON_GetObjectItem(cs_item, "max_current");
-            if (!cJSON_IsNumber(max_current) || max_current->valueint != (int)max_current->valuedouble)
-            {
-                ESP_LOGE(TAG, "\"max_current\" in current_sensor is missing or not an integer");
-                return ESP_FAIL;
-            }
+             cJSON *max_current = cJSON_GetObjectItem(cs_item, "max_current");
+             if (!cJSON_IsNumber(max_current))
+             {
+                 ESP_LOGE(TAG, "\"max_current\" in current_sensor is missing or not a number");
+                 return ESP_FAIL;
+             }
+             cJSON *read_mode = cJSON_GetObjectItem(cs_item, "read_mode");
+             if (!cJSON_IsString(read_mode))
+             {
+                 ESP_LOGE(TAG, "\"read_mode\" in current_sensor is missing or not a string");
+                 return ESP_FAIL;
+             }
         }
-
         cJSON *level_sensor = cJSON_GetObjectItem(pcu_item, "Level_sensor");
         if (!cJSON_IsObject(level_sensor))
         {

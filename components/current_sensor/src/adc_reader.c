@@ -2,11 +2,12 @@
 #include <esp_adc/adc_oneshot.h>
 #include <esp_log.h>
 #include <stdlib.h>
+#include <string.h>
 
 static const char *TAG = "ADC_READER";
 
 struct adc_reader_t {
-    adc_reader_config_t* config; // Configuration for the ADC reader
+    adc_reader_config_t config; // Configuration for the ADC reader
     adc_oneshot_unit_handle_t adc_handle; // Handle for the ADC unit
     adc_cali_handle_t adc_cali_handle;
     bool is_calibrated; // Flag to check if the ADC is calibrated
@@ -21,7 +22,7 @@ adc_reader_t* adc_reader_create(const adc_reader_config_t* config){
         return NULL; // Handle memory allocation failure
     }
 
-    adc_reader->config = config;
+    memcpy(&adc_reader->config, config, sizeof(adc_reader_config_t)); // Copy the configuration
     adc_reader->is_initialized = false; // Initially not initialized
     adc_reader->adc_handle = NULL; // ADC handle is NULL until initialized
 
@@ -36,7 +37,7 @@ error_type_t adc_reader_init(adc_reader_t* adc_reader){
     }
 
     adc_oneshot_unit_init_cfg_t init_config = {
-        .unit_id = adc_reader->config->adc_unit_id,
+        .unit_id = adc_reader->config.adc_unit_id,
     };
 
     esp_err_t err = adc_oneshot_new_unit(&init_config, &adc_reader->adc_handle);
@@ -46,13 +47,13 @@ error_type_t adc_reader_init(adc_reader_t* adc_reader){
     }
 
     adc_oneshot_chan_cfg_t config = {
-        .atten = adc_reader->config->adc_atten, // Set the attenuation
-        .bitwidth = adc_reader->config->adc_bitwidth, // Set the bit width
+        .atten = adc_reader->config.adc_atten, // Set the attenuation
+        .bitwidth = adc_reader->config.adc_bitwidth, // Set the bit width
     };
-    adc_oneshot_config_channel(adc_reader->adc_handle, adc_reader->config->adc_channel, &config);
-    adc_reader->is_calibrated = adc_calibration_init(adc_reader->config->adc_unit_id,
-                                             adc_reader->config->adc_channel,
-                                              adc_reader->config->adc_atten, &adc_reader->adc_cali_handle);
+    adc_oneshot_config_channel(adc_reader->adc_handle, adc_reader->config.adc_channel, &config);
+    adc_reader->is_calibrated = adc_calibration_init(adc_reader->config.adc_unit_id,
+                                             adc_reader->config.adc_channel,
+                                              adc_reader->config.adc_atten, &adc_reader->adc_cali_handle);
     adc_reader->is_initialized = true; // Set the initialized flag
     ESP_LOGI(TAG, "ADC reader initialized successfully");
     return SYSTEM_OK;
@@ -65,7 +66,7 @@ error_type_t adc_reader_read(const adc_reader_t* adc_reader, int *raw_value){
         return SYSTEM_INVALID_STATE; // ADC reader is not initialized
     }
 
-    esp_err_t err = adc_oneshot_read(adc_reader->adc_handle, adc_reader->config->adc_channel, raw_value);
+    esp_err_t err = adc_oneshot_read(adc_reader->adc_handle, adc_reader->config.adc_channel, raw_value);
     if (err != SYSTEM_OK){
         ESP_LOGE(TAG, "ADC read failed: %s", esp_err_to_name(err));
         return SYSTEM_OPERATION_FAILED;

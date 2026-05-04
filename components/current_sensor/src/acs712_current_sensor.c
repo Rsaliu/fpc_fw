@@ -14,7 +14,7 @@ static const char *TAG = "ACS712";
 static const float ACS712_SENSITIVITY = 66; // ACS712_Sensitivity for ACS712 5A version in V/A 66mv/A
 
 struct acs712_sensor_t {
-    acs712_config_t* config;
+    acs712_config_t config;
     bool is_initialized;
 };
 
@@ -57,7 +57,7 @@ acs712_sensor_t *acs712_create(acs712_config_t* config) {
     }
 
     sensor->is_initialized = false;
-    sensor->config = config;
+    memcpy(&sensor->config, config, sizeof(acs712_config_t));
 
     return sensor;
 }
@@ -67,7 +67,7 @@ error_type_t acs712_sensor_init(acs712_sensor_t *sensor) {
         ESP_LOGE(TAG, "NULL sensor pointer");
         return SYSTEM_NULL_PARAMETER;
     }
-    if(!sensor->config->callback_func) {
+    if(!sensor->config.adc_reader){
         ESP_LOGE(TAG, "ADC reader callback not set");
         return SYSTEM_NULL_PARAMETER;
     }
@@ -76,7 +76,7 @@ error_type_t acs712_sensor_init(acs712_sensor_t *sensor) {
         return SYSTEM_INVALID_STATE;
     }
     sensor->is_initialized = true;
-    ESP_LOGI(TAG, "ASC712 Sensor initialized");
+    ESP_LOGI(TAG, "ASC712 Sensor initialized, pointer address: %p", sensor);
 
     return SYSTEM_OK;
 }
@@ -116,96 +116,111 @@ error_type_t acs712_destroy(acs712_sensor_t **sensor) {
 }
 
 error_type_t acs712_read_current(const acs712_sensor_t* sensor, float* current){
-    if (!sensor || !current || !sensor->config) {
+    if (!sensor || !current) {
         ESP_LOGE(TAG, "NULL sensor or current pointer");
         return SYSTEM_NULL_PARAMETER;
     }
     if (!sensor->is_initialized) {
-        ESP_LOGE(TAG, "Sensor not initialized");
+        ESP_LOGE(TAG, "Sensor not initialized, pointer address: %p", sensor);
         return SYSTEM_INVALID_STATE;
     }
-    if(sensor->config->read_mode != ACS712_READ_MODE_BASIC){
+    if(sensor->config.read_mode != ACS712_READ_MODE_BASIC){
         ESP_LOGE(TAG, "Sensor not in basic read mode");
         return SYSTEM_INVALID_MODE;
     }
-    printf("Reading current for sensor with zero voltage: %d\n", sensor->config->zero_voltage);
-    int voltage_value;
-    acs712_reading_callback_t adc_reader = (acs712_reading_callback_t)sensor->config->callback_func;
+    ESP_LOGI(TAG,"Reading current for sensor with zero voltage: %d\n", sensor->config.zero_voltage);
+    int16_t voltage_value;
+    acs712_reading_callback_t adc_reader = (acs712_reading_callback_t)sensor->config.adc_reader;
     if(!adc_reader){
         ESP_LOGE(TAG, "ADC reader function not set");
         return SYSTEM_NULL_PARAMETER;
     }
-    error_type_t err = adc_reader(*sensor->config->context,&voltage_value);
+    error_type_t err = adc_reader(sensor->config.context,(int*)&voltage_value);
     if (err != SYSTEM_OK) {
         ESP_LOGE(TAG, "ADC read failed");
         return SYSTEM_OPERATION_FAILED;
     }
 
     // Convert raw ADC value to current
-    *current = (voltage_value - sensor->config->zero_voltage) / ACS712_SENSITIVITY; // Assuming 12-bit ADC resolution
+    *current = (voltage_value - sensor->config.zero_voltage) / ACS712_SENSITIVITY; // Assuming 12-bit ADC resolution
+    // print voltage_value, sensor->config.zero_voltage and  ACS712_SENSITIVITY
+    ESP_LOGI(TAG, "ADC Voltage: %d, Zero Voltage: %d, Sensitivity: %.2f", voltage_value, sensor->config.zero_voltage, ACS712_SENSITIVITY);
 
-    ESP_LOGI(TAG, "Current reading: %.2f A", *current);
+    ESP_LOGW(TAG, "Current reading: %.2f A", *current);
     return SYSTEM_OK;
 }
 
-error_type_t acs712_monitor_current_window(const acs712_sensor_t* sensor, float max_threshold_current, float min_threshold_current, overcurrent_comparator_callback_t callback, void* context){
-    if (!sensor || !sensor->config) {
-        ESP_LOGE(TAG, "NULL sensor pointer");
-        return SYSTEM_NULL_PARAMETER;
-    }
-    if (!sensor->is_initialized) {
-        ESP_LOGE(TAG, "Sensor not initialized");
-        return SYSTEM_INVALID_STATE;
-    }
-    if(sensor->config->read_mode != ACS712_READ_MODE_OVERCURRENT_MONITOR){
-        ESP_LOGE(TAG, "Sensor not in basic read mode");
-        return SYSTEM_INVALID_MODE;
-    }
+// error_type_t acs712_monitor_current_window(const acs712_sensor_t* sensor, float max_threshold_current, float min_threshold_current, overcurrent_comparator_callback_t callback, void* context){
+//     if (!sensor || !sensor->config) {
+//         ESP_LOGE(TAG, "NULL sensor pointer");
+//         return SYSTEM_NULL_PARAMETER;
+//     }
+//     if (!sensor->is_initialized) {
+//         ESP_LOGE(TAG, "Sensor not initialized");
+//         return SYSTEM_INVALID_STATE;
+//     }
+//     if(sensor->config->read_mode != ACS712_READ_MODE_OVERCURRENT_MONITOR){
+//         ESP_LOGE(TAG, "Sensor not in basic read mode");
+//         return SYSTEM_INVALID_MODE;
+//     }
 
-    uint16_t high_threshold = (int)(max_threshold_current * ACS712_SENSITIVITY) + sensor->config->zero_voltage;
-    uint16_t low_threshold;
-    if(min_threshold_current == 0){
-        low_threshold = sensor->config->zero_voltage - (int)(max_threshold_current * ACS712_SENSITIVITY);
-    }else{
-        low_threshold = (int)(min_threshold_current * ACS712_SENSITIVITY) + sensor->config->zero_voltage;
-    }
+//     uint16_t high_threshold = (int)(max_threshold_current * ACS712_SENSITIVITY) + sensor->config->zero_voltage;
+//     uint16_t low_threshold;
+//     if(min_threshold_current == 0){
+//         low_threshold = sensor->config->zero_voltage - (int)(max_threshold_current * ACS712_SENSITIVITY);
+//     }else{
+//         low_threshold = (int)(min_threshold_current * ACS712_SENSITIVITY) + sensor->config->zero_voltage;
+//     }
     
-    overcurrent_monitor_func_callback_t monitor_func = (overcurrent_monitor_func_callback_t)sensor->config->callback_func;
-    if(!monitor_func){
-        ESP_LOGE(TAG, "Overcurrent monitor function not set");
-        return SYSTEM_NULL_PARAMETER;
-    }
-    error_type_t err = monitor_func(*sensor->config->context, high_threshold, low_threshold, callback, context);
-    if (err != SYSTEM_OK) {
-        ESP_LOGE(TAG, "Failed to set up overcurrent monitoring");
-        return err;
-    }
+//     overcurrent_monitor_func_callback_t monitor_func = (overcurrent_monitor_func_callback_t)sensor->config->callback_func;
+//     if(!monitor_func){
+//         ESP_LOGE(TAG, "Overcurrent monitor function not set");
+//         return SYSTEM_NULL_PARAMETER;
+//     }
+//     error_type_t err = monitor_func(*sensor->config->context, high_threshold, low_threshold, callback, context);
+//     if (err != SYSTEM_OK) {
+//         ESP_LOGE(TAG, "Failed to set up overcurrent monitoring");
+//         return err;
+//     }
 
-    return SYSTEM_OK;
-}
+//     return SYSTEM_OK;
+// }
 
-error_type_t acs712_monitor_read_current_with_cb(const acs712_sensor_t* sensor, measurement_complete_callback_t callback, void* context){
-    if (!sensor || !sensor->config) {
-        ESP_LOGE(TAG, "NULL sensor pointer");
+// error_type_t acs712_monitor_read_current_with_cb(const acs712_sensor_t* sensor, measurement_complete_callback_t callback, void* context){
+//     if (!sensor || !sensor->config) {
+//         ESP_LOGE(TAG, "NULL sensor pointer");
+//         return SYSTEM_NULL_PARAMETER;
+//     }
+//     if (!sensor->is_initialized) {
+//         ESP_LOGE(TAG, "Sensor not initialized");
+//         return SYSTEM_INVALID_STATE;
+//     }
+//     if(sensor->config->read_mode != ACS712_READ_MODE_CONTINUOUS_MEASUREMENT){
+//         ESP_LOGE(TAG, "Sensor not in basic read mode");
+//         return SYSTEM_INVALID_MODE;
+//     }
+//     acs712_measurement_complete_callback_t measure_complete_cb = (acs712_measurement_complete_callback_t)sensor->config->callback_func;
+//     if(!measure_complete_cb){
+//         ESP_LOGE(TAG, "Measurement complete callback function not set");
+//         return SYSTEM_NULL_PARAMETER;
+//     }
+//     error_type_t err = measure_complete_cb(*sensor->config->context, callback, context);
+//     if (err != SYSTEM_OK) {
+//         ESP_LOGE(TAG, "ADC read failed");
+//         return SYSTEM_OPERATION_FAILED;
+//     }
+//     return SYSTEM_OK;
+// }
+
+error_type_t acs712_get_current_from_adc_value(const acs712_sensor_t* sensor, const uint16_t adc_voltage, float* current)
+{
+    if (!sensor || !current) {
+        ESP_LOGE(TAG, "NULL sensor or current pointer");
         return SYSTEM_NULL_PARAMETER;
     }
-    if (!sensor->is_initialized) {
-        ESP_LOGE(TAG, "Sensor not initialized");
-        return SYSTEM_INVALID_STATE;
-    }
-    if(sensor->config->read_mode != ACS712_READ_MODE_CONTINUOUS_MEASUREMENT){
-        ESP_LOGE(TAG, "Sensor not in basic read mode");
-        return SYSTEM_INVALID_MODE;
-    }
-    acs712_measurement_complete_callback_t measure_complete_cb = (acs712_measurement_complete_callback_t)sensor->config->callback_func;
-    if(!measure_complete_cb){
-        ESP_LOGE(TAG, "Measurement complete callback function not set");
-        return SYSTEM_NULL_PARAMETER;
-    }
-    error_type_t err = measure_complete_cb(*sensor->config->context, callback, context);
-    if (err != SYSTEM_OK) {
-        ESP_LOGE(TAG, "ADC read failed");
-        return SYSTEM_OPERATION_FAILED;
-    }
+    // Convert raw ADC value to current
+        *current = (adc_voltage - sensor->config.zero_voltage) / ACS712_SENSITIVITY; // Assuming 12-bit ADC resolution
+
+    ESP_LOGI(TAG, "Converted ADC Voltage: %d to Current: %.2f A", adc_voltage, *current);
     return SYSTEM_OK;
 }

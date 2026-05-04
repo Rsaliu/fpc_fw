@@ -15,7 +15,7 @@
 
 typedef void (*overcurrent_comparator_callback_t)(overcurrent_queue_item_t item);
 
-typedef void(* measurement_complete_callback_t)(measurement_item_t item);
+typedef void(*measurement_complete_callback_t)(measurement_item_t item);
 
 
 #endif // __CURRENT_SENSOR_COMMON_H__

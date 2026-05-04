@@ -13,505 +13,754 @@
 #include "esp_log.h"
 
 static const char *TAG = "SETUP_CONFIG";
-rs485_t *rs485Obj;
-ads1115_t*adc1115_obj;
 
-error_type_t deserilalized_pump_control_unit(pump_control_unit_t *unit, const char *json_str)
-{
-    cJSON *root = cJSON_Parse(json_str);
+
+cJSON * deserialized_to_json(const char *json_str, size_t size){
+    cJSON *root = cJSON_ParseWithLength(json_str, size);
     if (!root)
     {
         ESP_LOGE(TAG, "failed to parse json string\n.");
-        return SYSTEM_INVALID_PARAMETER;
+        return NULL;
     }
-
-    //  deserilized unit id
-    cJSON *id = cJSON_GetObjectItem(root, "id");
-    if (!id || !cJSON_IsNumber(id))
-    {
-        ESP_LOGE(TAG, "unit id is empty/null or invalid int\n.");
-        cJSON_Delete(root);
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->unit_id = id->valueint;
-    // deserilized tank
-    cJSON *tank = cJSON_GetObjectItem(root, "tank");
-    if (!tank || !cJSON_IsObject(tank))
-    {
-        ESP_LOGE(TAG, "invalid tank objects");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    cJSON *t_id = cJSON_GetObjectItem(tank, "id");
-    if (!t_id || !cJSON_IsNumber(t_id))
-    {
-        ESP_LOGE(TAG, "tank id is empty/null or invalid int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank.tank_id = t_id->valueint;
-    cJSON *t_capacity = cJSON_GetObjectItem(tank, "capacity_in_liters");
-    if (!t_capacity || !cJSON_IsNumber(t_capacity))
-    {
-        ESP_LOGE(TAG, "tank capacity is empty/null or invalid int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank.tank_capacity = t_capacity->valuedouble;
-    cJSON *t_shape = cJSON_GetObjectItem(tank, "shape");
-    if (!t_shape || !cJSON_IsString(t_shape))
-    {
-        ESP_LOGE(TAG, "tank shape retured an empty/null string\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank.tank_shape = t_shape->valuestring;
-    cJSON *t_height = cJSON_GetObjectItem(tank, "height_in_cm");
-    if (!t_height || !cJSON_IsNumber(t_height))
-    {
-        ESP_LOGE(TAG, "tank height retured abd empty/null float.\n");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank.tank_height = t_height->valuedouble;
-    cJSON *t_full = cJSON_GetObjectItem(tank, "full_level_in_mm");
-    if (!t_full || !cJSON_IsNumber(t_full))
-    {
-        ESP_LOGE(TAG, "tank full level retured an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank.tank_full = t_full->valueint;
-    cJSON *t_low = cJSON_GetObjectItem(tank, "low_level_in_mm");
-    if (!t_low || !cJSON_IsNumber(t_low))
-    {
-        ESP_LOGE(TAG, "tank low level retured an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank.tank_low = t_low->valueint;
-
-    // deserilized pump
-    cJSON *pump = cJSON_GetObjectItem(root, "pump");
-    if (!pump || !cJSON_IsObject(pump))
-    {
-        ESP_LOGE(TAG, "invalid pump object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    cJSON *p_id = cJSON_GetObjectItem(pump, "id");
-    if (!p_id || !cJSON_IsNumber(p_id))
-    {
-        ESP_LOGE(TAG, "pump id returned an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->pump.pump_id = p_id->valueint;
-    cJSON *p_make = cJSON_GetObjectItem(pump, "make");
-    if (!p_make || !cJSON_IsString(p_make))
-    {
-        ESP_LOGE(TAG, "pump make retured an empty/null string");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->pump.pump_make = p_make->valuestring;
-    cJSON *p_power = cJSON_GetObjectItem(pump, "power_in_hp");
-    if (!p_power || !cJSON_IsNumber(p_power))
-    {
-        ESP_LOGE(TAG, "pump power in hp retured an empty/null float\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->pump.pump_power_in_hp = p_power->valuedouble;
-    cJSON *p_current_rating = cJSON_GetObjectItem(pump, "current_rating");
-    if (!p_current_rating || !cJSON_IsNumber(p_current_rating))
-    {
-        ESP_LOGE(TAG, "pump current rating retured an empty/null float\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->pump.pump_current_rating = p_current_rating->valuedouble;
-
-    // deseriliized tank_monitor
-    cJSON *tank_monitor = cJSON_GetObjectItem(root, "tank_monitor");
-    if (!tank_monitor || !cJSON_IsObject(tank_monitor))
-    {
-        ESP_LOGE(TAG, "invalid tank_monitor object\n");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    cJSON *tank_monitor_id = cJSON_GetObjectItem(tank_monitor, "id");
-    if (!tank_monitor_id || !cJSON_IsNumber(tank_monitor_id))
-    {
-        ESP_LOGE(TAG, "tank_monitor_id returned empty/null int\n");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank_monitor.tank_id = tank_monitor_id->valueint;
-    cJSON *level_sensor_id = cJSON_GetObjectItem(tank_monitor, "level_sensor_id");
-    if (!level_sensor_id || !cJSON_IsNumber(level_sensor_id))
-    {
-        ESP_LOGE(TAG, "tank_monitor level_sensor_id retured empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank_monitor.level_sensor_id = level_sensor_id->valueint;
-    cJSON *tank_id = cJSON_GetObjectItem(tank_monitor, "tank_id");
-    if (!tank_id || !cJSON_IsNumber(tank_id))
-    {
-        ESP_LOGE(TAG, "tank_monitor tank_id retured empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->tank_monitor.tank_id = tank_id->valueint;
-
-    // deserilized pump_monitor
-    cJSON *pump_monitor = cJSON_GetObjectItem(root, "pump_monitor");
-    if (!pump_monitor || !cJSON_IsObject(pump_monitor))
-    {
-        ESP_LOGE(TAG, "invalid pump monitor object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    cJSON *pump_monitor_id = cJSON_GetObjectItem(pump_monitor, "id");
-    if (!pump_monitor_id || !cJSON_IsNumber(pump_monitor_id))
-    {
-        ESP_LOGE(TAG, "pump monitor id retured an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->pump_monitor.pump_monitor_id = pump_monitor_id->valueint;
-    cJSON *current_sensor_id = cJSON_GetObjectItem(pump_monitor, "current_sensor_id");
-    if (!current_sensor_id || !cJSON_IsNumber(current_sensor_id))
-    {
-        ESP_LOGE(TAG, "pump monitor current sensor id returend empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->pump_monitor.current_senor_id = current_sensor_id->valueint;
-    cJSON *pump_id = cJSON_GetObjectItem(pump_monitor, "pump_id");
-    if (!pump_id || !cJSON_IsNumber(pump_id))
-    {
-        ESP_LOGE(TAG, "pump monitor pump id retured an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->pump_monitor.pump_id = pump_id->valueint;
-
-    // desrilized relay driver
-    cJSON *relay = cJSON_GetObjectItem(root, "relay");
-    if (!relay || !cJSON_IsObject(relay))
-    {
-        ESP_LOGE(TAG, "invalid relay object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    cJSON *relay_id = cJSON_GetObjectItem(relay, "id");
-    if (!relay_id || !cJSON_IsNumber(relay_id))
-    {
-        ESP_LOGE(TAG, "relay id returend an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->relay.relay_id = relay_id->valueint;
-    cJSON *pin_number = cJSON_GetObjectItem(relay, "pin_number");
-    if (!pin_number || !cJSON_IsNumber(pin_number))
-    {
-        ESP_LOGE(TAG, "relay pin number retured an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->relay.relay_pin_number = pin_number->valueint;
-
-    // deserilized level sensor
-    cJSON *level_sensor = cJSON_GetObjectItem(root, "level_sensor");
-    if (!level_sensor || !cJSON_IsObject(level_sensor))
-    {
-        ESP_LOGE(TAG, " invalid level sensor object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    cJSON *level_Sensor_id = cJSON_GetObjectItem(level_sensor, "id");
-    if (!level_Sensor_id || !cJSON_IsNumber(level_Sensor_id))
-    {
-        ESP_LOGE(TAG, "level sensor id retured empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->level_sensor.level_sensor_id = level_Sensor_id->valueint;
-    cJSON *interface = cJSON_GetObjectItem(level_sensor, "interface");
-    if (!interface || !cJSON_IsString(interface))
-    {
-        ESP_LOGE(TAG, "level sensor interface retured empty/null string\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->level_sensor.interface = interface->valuestring;
-    cJSON *sensor_addr = cJSON_GetObjectItem(level_sensor, "sensor_addr");
-    if (!sensor_addr || !cJSON_IsNumber(sensor_addr))
-    {
-        ESP_LOGE(TAG, "level sensor addr returend empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->level_sensor.sensor_addr = sensor_addr->valueint;
-    cJSON *protocol = cJSON_GetObjectItem(level_sensor, "protocol");
-    if (!protocol || !cJSON_IsString(protocol))
-    {
-        ESP_LOGE(TAG, "level sensor protocol returend empty/null string\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->level_sensor.protocol = protocol->valuestring;
-
-    // deserilized current sensor
-    cJSON *current_sensor = cJSON_GetObjectItem(root, "current_sensor");
-    if (!current_sensor || !cJSON_IsObject(current_sensor))
-    {
-        ESP_LOGE(TAG, "invalid current sensor object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    cJSON *current_Sensor_id = cJSON_GetObjectItem(current_sensor, "id");
-    if (!current_Sensor_id || !cJSON_IsNumber(current_Sensor_id))
-    {
-        ESP_LOGE(TAG, "current sensor id retured an empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->current_sensor.current_sensor_id = current_Sensor_id->valueint;
-    cJSON *sensor_interface = cJSON_GetObjectItem(current_sensor, "interface");
-    if (!sensor_interface || !cJSON_IsString(sensor_interface))
-    {
-        ESP_LOGE(TAG, "current sensor interface retured empty/null string\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->current_sensor.interface = sensor_interface->valuestring;
-    cJSON *max_current = cJSON_GetObjectItem(current_sensor, "max_current");
-    if (!max_current || !cJSON_IsNumber(max_current))
-    {
-        ESP_LOGE(TAG, "max current retured empty/null int\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->current_sensor.max_current = max_current->valueint;
-    cJSON *make = cJSON_GetObjectItem(current_sensor, "make");
-    if (!make || !cJSON_IsString(make))
-    {
-        ESP_LOGE(TAG, "current sensor make retured empty/null string\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    unit->current_sensor.current_sensor_make = make->valuestring;
-     //cJSON_Delete(root);
-    return SYSTEM_OK;
+    return root;
 }
 
-error_type_t setup_config_tank(pump_control_unit_t *pump_control_obj)
-{
-
-    if (pump_control_obj == NULL)
+cJSON * get_pump_control_json_array_from_root(const cJSON* root,size_t *array_size){
+    *array_size = 0;
+    // get array of pump control units
+    cJSON *units = cJSON_GetObjectItem(root, "pump_control_units");
+    if (!units )
     {
-        return SYSTEM_NULL_PARAMETER;
+        ESP_LOGE(TAG, "pump_control_units is NULL\n.");
+        return NULL;
     }
-    tank_shape_t _shape = string_to_tank_shape(pump_control_obj->tank.tank_shape);
-    tank_config_t tank_config = {
-        .id = pump_control_obj->tank.tank_id,
-        .capacity_in_liters = pump_control_obj->tank.tank_capacity,
-        .shape = _shape,
-        .height_in_cm = pump_control_obj->tank.tank_height,
-        .full_level_in_mm = pump_control_obj->tank.tank_full,
-        .low_level_in_mm = pump_control_obj->tank.tank_low};
-    tank_t *tank_obj = tank_create(tank_config);
-    if (!tank_obj)
+    if(!cJSON_IsArray(units))
     {
-        ESP_LOGE(TAG, "failed to create tank obj\n.");
-        return SYSTEM_INVALID_PARAMETER;
+        ESP_LOGE(TAG, "pump_control_units is not an array\n.");
+        return NULL;
     }
-    return SYSTEM_OK;
+    *array_size = cJSON_GetArraySize(units);
+    return units;
 }
 
-error_type_t setup_config_pump(pump_control_unit_t *pump_control_obj)
-{
-    if (pump_control_obj == NULL)
+static current_sensor_interface_type_t string_to_current_sensor_interface_type(const char* interface_str){
+    if (strcmp("ADS1115_one", interface_str) == 0)
     {
-        return SYSTEM_NULL_PARAMETER;
+        return ADS1115_ONE;
     }
-
-    pump_config_t pump_config = {
-        .id = pump_control_obj->pump.pump_id,
-        .make = pump_control_obj->pump.pump_make,
-        .power_in_hp = pump_control_obj->pump.pump_power_in_hp,
-        .current_rating = pump_control_obj->pump.pump_current_rating};
-
-    pump_t *pump_obj = pump_create(pump_config);
-    if (!pump_obj)
+    else if(strcmp("internal_adc", interface_str) == 0)
     {
-        ESP_LOGE(TAG, "failed to create pump obj\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    return SYSTEM_OK;
-}
-
-error_type_t setup_config_tank_monitor(pump_control_unit_t *pump_control_obj)
-{
-    if (pump_control_obj == NULL)
-    {
-        return SYSTEM_NULL_PARAMETER;
-    }
-
-    level_sensor_config_t sensor_config = {
-        .id = pump_control_obj->tank_monitor.level_sensor_id};
-    level_sensor_t *sensor_obj = level_sensor_create(sensor_config);
-    if (!sensor_obj)
-    {
-        ESP_LOGE(TAG, "invalid sensor obj\n.");
-    }
-
-    tank_config_t tank_config = {
-        .id = pump_control_obj->tank_monitor.tank_id};
-    tank_t *tank = tank_create(tank_config);
-    if (!tank)
-    {
-        ESP_LOGE(TAG, "invaild tank \n.");
-    }
-
-    tank_monitor_config_t tank_monitor_config = {
-        .id = pump_control_obj->tank_monitor.tank_monitor_id,
-        .sensor = sensor_obj,
-        .tank = tank};
-    tank_monitor_t *tank_monitor_obj = tank_monitor_create(tank_monitor_config);
-    if (!tank_monitor_obj)
-    {
-        ESP_LOGE(TAG, "invalid tank monitor object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    return SYSTEM_OK;
-}
-
-error_type_t setup_config_pump_monitor(pump_control_unit_t *pump_control_obj)
-{
-    if (pump_control_obj == NULL)
-    {
-        return SYSTEM_NULL_PARAMETER;
-    }
-
-    current_sensor_config_t sensor = {
-        .id = pump_control_obj->pump_monitor.current_senor_id};
-    current_sensor_t *sensor_obj = current_sensor_create(&sensor);
-    if (!sensor_obj)
-    {
-        ESP_LOGE(TAG, "invalid sensor obj\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-
-    pump_config_t pump = {
-        .id = pump_control_obj->pump_monitor.pump_id};
-    pump_t *pump_obj = pump_create(pump);
-    if (!pump_obj)
-    {
-        ESP_LOGE(TAG, "invalid pump object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-
-    pump_monitor_config_t pump_monitor_config = {
-        .id = pump_control_obj->pump_monitor.pump_monitor_id,
-        .sensor = sensor_obj,
-        .pump = pump_obj};
-    pump_monitor_t *pump_monitor = pump_monitor_create(pump_monitor_config);
-    if (!pump_monitor)
-    {
-        ESP_LOGE(TAG, "invalid pump monitor\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    return SYSTEM_OK;
-}
-
-error_type_t setup_config_relay(pump_control_unit_t *pump_control_obj)
-{
-    if (pump_control_obj == NULL)
-    {
-        return SYSTEM_NULL_PARAMETER;
-    }
-
-    relay_config_t relay_config = {
-        .id = pump_control_obj->relay.relay_id,
-        .relay_pin_number = pump_control_obj->relay.relay_pin_number};
-    relay_t *relay = relay_create(&relay_config);
-    if (!relay)
-    {
-        ESP_LOGE(TAG, "invalid relay object");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    return SYSTEM_OK;
-}
-
-static error_type_t set_level_sensor_interface_to_string(const char *config_str, level_sensor_config_t *config)
-{
-    if (strcmp("RS485", config_str) == 0)
-    {
-        config->medium_context = (void *)rs485Obj;
-    }
-    else if (strcmp("UART", config_str) == 0)
-    {
-        config->medium_context = (void *)rs485Obj;
-    }
-    else if (strcmp("PWM", config_str) == 0)
-    {
-        config->medium_context = (void *)rs485Obj;
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Unknow interface");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    return SYSTEM_OK;
-}
-
-static error_type_t set_level_sensor_protocol_to_string(const char *protocol_str, level_sensor_config_t *config)
-{
-    if (strcmp("GL_A01_PROTOCOL", protocol_str) == 0)
-    {
-        config->protocol = protocol_gl_a01_read_level;
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Unknow protocol");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    return SYSTEM_OK;
-}
-
-error_type_t setup_config_level_sensor(pump_control_unit_t *pump_control_obj)
-{
-    level_sensor_config_t level_sensor_config = {
-        .id = pump_control_obj->level_sensor.level_sensor_id,
-        .medium_context = (void *)NULL,
-        .sensor_addr = pump_control_obj->level_sensor.sensor_addr,
-        .protocol = NULL,
-    };
-    error_type_t err = set_level_sensor_interface_to_string(pump_control_obj->level_sensor.interface, &level_sensor_config);
-    if (!err)
-    {
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    
-    err = set_level_sensor_protocol_to_string(pump_control_obj->level_sensor.protocol, &level_sensor_config);
-    if (!err)
-    {
-        return SYSTEM_INVALID_PARAMETER;
-    }
-    
-    level_sensor_t *level_sensor = level_sensor_create(level_sensor_config);
-    if (!level_sensor)
-    {
-        ESP_LOGE(TAG, "invallid level sensor object\n.");
-        return SYSTEM_INVALID_PARAMETER;
-    }
-
-    return SYSTEM_OK;
-}
-
-static error_type_t set_current_sensor_interface_to_string(const char *current_sensor_interface_str, current_sensor_config_t *config)
-{
-    if (strcmp("I2C", current_sensor_interface_str) == 0)
-    {
-        config->context = (void**)adc1115_obj;
+        return INTERNAL_ADC;
     }
     else
     {
         ESP_LOGE(TAG, "unknown current sensor interface");
+        return INVALID_INTERFACE;
+    }
+}
+static current_sensor_read_mode_config_t string_to_current_sensor_read_mode(const char* read_mode_str){
+    if (strcmp("basic", read_mode_str) == 0)
+    {
+        return CURRENT_SENSOR_CONFIG_READ_MODE_BASIC;
+    }
+    else if(strcmp("continuous", read_mode_str) == 0)
+    {
+        return CURRENT_SENSOR_CONFIG_READ_CONTINUOUS;
+    }
+    else if(strcmp("overcurrent_monitor", read_mode_str) == 0)
+    {
+        return CURRENT_SENSOR_CONFIG_READ_OVERCURRENT_MONITOR;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown current sensor read mode");
+        return INVALID_READ_MODE;
+    }
+}
+
+static current_sensor_make_config_t string_to_current_sensor_make(const char* make_str){
+    if (strcmp("ACS712", make_str) == 0)
+    {
+        return ACS712;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown current sensor make");
+        return INVALID_CURRENT_SENSOR_MAKE;
+    }
+}
+
+error_type_t get_current_sensors_configs_from_pump_control_json(const cJSON* pump_control_unit_json,current_sensor_setup_config_t** current_sensor_configs, int* num_sensors){
+    if (pump_control_unit_json == NULL || current_sensor_configs == NULL || num_sensors == NULL)
+    {
+        ESP_LOGE(TAG, "invalid parameter passed to current sensor parser\n.");
         return SYSTEM_INVALID_PARAMETER;
+    }
+    *num_sensors = 0;
+    *current_sensor_configs = NULL;
+    cJSON *current_sensor_json = cJSON_GetObjectItem(pump_control_unit_json, "current_sensors");
+    // current sensor is an array of objects
+    if (!current_sensor_json || !cJSON_IsArray(current_sensor_json))
+    {
+        ESP_LOGE(TAG, "current_sensors is empty/null or invalid array\n.");
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    int sensor_array_size = cJSON_GetArraySize(current_sensor_json);
+    *current_sensor_configs = (current_sensor_setup_config_t*)malloc(sizeof(current_sensor_setup_config_t)*sensor_array_size);
+    if (*current_sensor_configs == NULL)
+    {
+        ESP_LOGE(TAG, "failed to allocate current sensor config array\n.");
+        return SYSTEM_FAILED;
+    }
+    /* sample schema for each current sensor object in the array
+                    {
+                "Id": 1,
+                "interface":{
+                    "type": "ADS1115_one",
+                    "channel": 1
+                },
+                "make": "ACS712",
+                "max_current": 20,
+                "read_mode" : "basic"
+            }
+    */
+    int index = 0;
+    for (int i = 0; i < sensor_array_size; i++){
+        cJSON *current_sensor_obj = cJSON_GetArrayItem(current_sensor_json, i);
+        if (!current_sensor_obj || !cJSON_IsObject(current_sensor_obj))
+        {
+            ESP_LOGE(TAG, "current sensor object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *id = cJSON_GetObjectItem(current_sensor_obj, "id");
+        if (!id || !cJSON_IsNumber(id))
+        {
+            ESP_LOGE(TAG, "current sensor id is empty/null or invalid int\n.");
+            continue;
+        }
+        (*current_sensor_configs)[index].current_sensor_id = id->valueint;
+
+        cJSON *interface = cJSON_GetObjectItem(current_sensor_obj, "interface");
+        if (!interface || !cJSON_IsObject(interface))
+        {
+            ESP_LOGE(TAG, "current sensor interface is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *interface_type = cJSON_GetObjectItem(interface, "type");
+        if (!interface_type || !cJSON_IsString(interface_type))
+        {
+            ESP_LOGE(TAG, "current sensor interface type is empty/null or invalid string\n.");
+            continue;
+        }
+        (*current_sensor_configs)[index].interface.interface = string_to_current_sensor_interface_type(interface_type->valuestring);
+
+        cJSON *channel = cJSON_GetObjectItem(interface, "channel");
+        if (!channel || !cJSON_IsNumber(channel))
+        {
+            ESP_LOGE(TAG, "current sensor interface channel is empty/null or invalid int\n.");
+            continue;
+        }
+        (*current_sensor_configs)[index].interface.channel = channel->valueint;
+
+        cJSON *make = cJSON_GetObjectItem(current_sensor_obj, "make");
+        if (!make || !cJSON_IsString(make))
+        {
+            ESP_LOGE(TAG, "current sensor make is empty/null or invalid string\n.");
+            continue;
+        }
+        (*current_sensor_configs)[index].current_sensor_make = string_to_current_sensor_make(make->valuestring);
+
+         cJSON *max_current = cJSON_GetObjectItem(current_sensor_obj, "max_current");
+        if (!max_current || !cJSON_IsNumber(max_current))
+        {
+            ESP_LOGE(TAG, "current sensor max current is empty/null or invalid number\n.");
+            continue;
+        }
+        (*current_sensor_configs)[index].max_current = max_current->valueint;
+
+        cJSON *read_mode = cJSON_GetObjectItem(current_sensor_obj, "read_mode");
+        if (!read_mode || !cJSON_IsString(read_mode))
+        {
+            ESP_LOGE(TAG, "current sensor read mode is empty/null or invalid string\n.");
+            continue;
+        }
+        (*current_sensor_configs)[index].read_mode = string_to_current_sensor_read_mode(read_mode->valuestring);
+        *num_sensors = ++index;
     }
     return SYSTEM_OK;
 }
 
-error_type_t setup_config_current_sensor(pump_control_unit_t *pump_control_obj)
-{
-    current_sensor_config_t current_sensor_config = {
-        .id = pump_control_obj->current_sensor.current_sensor_id,
-        .context = (void **)NULL,
-        .make = pump_control_obj->current_sensor.current_sensor_make,
-        .max_current = pump_control_obj->current_sensor.max_current};
-    error_type_t err = set_current_sensor_interface_to_string(pump_control_obj->current_sensor.interface, &current_sensor_config);
-    if (!err)
+error_type_t get_pumps_configs_from_pump_control_json(const cJSON* pump_control_unit_json, pump_setup_config_t** pump_configs, int* num_pumps){
+    *num_pumps = 0;
+    cJSON *pump_json = cJSON_GetObjectItem(pump_control_unit_json, "pumps");
+    // pump is an array of objects
+    if (!pump_json || !cJSON_IsArray(pump_json))
     {
+        ESP_LOGE(TAG, "pump is empty/null or invalid array\n.");
         return SYSTEM_INVALID_PARAMETER;
     }
-    
-    current_sensor_t *current_sensor = current_sensor_create(&current_sensor_config);
-    if (!current_sensor)
+    int pump_array_size = cJSON_GetArraySize(pump_json);
+    *pump_configs = (pump_setup_config_t*)malloc(sizeof(pump_setup_config_t)*pump_array_size);
+    /* sample schema for each pump object in the array
+            {
+                "id": 1,
+                "make": "Grundfos",
+                "power_in_hp": 0.5,
+                "current_rating": 2.5,
+                "min_working_current": 0.5
+            }
+    */
+   int index = 0;
+   for (int i = 0; i < pump_array_size; i++){
+        cJSON *pump_obj = cJSON_GetArrayItem(pump_json, i);
+        if (!pump_obj || !cJSON_IsObject(pump_obj))
+        {
+            ESP_LOGE(TAG, "pump object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *id = cJSON_GetObjectItem(pump_obj, "id");
+        if (!id || !cJSON_IsNumber(id))
+        {
+            ESP_LOGE(TAG, "pump id is empty/null or invalid int\n.");
+            continue;
+        }
+        pump_configs[index]->pump_id = id->valueint;
+
+        cJSON *make = cJSON_GetObjectItem(pump_obj, "make");
+        if (!make || !cJSON_IsString(make))
+        {
+            ESP_LOGE(TAG, "pump make is empty/null or invalid string\n.");
+            continue;
+        }
+        pump_configs[index]->pump_make = make->valuestring;
+
+        cJSON *power_in_hp = cJSON_GetObjectItem(pump_obj, "power_in_hp");
+        if (!power_in_hp || !cJSON_IsNumber(power_in_hp))
+        {
+            ESP_LOGE(TAG, "pump power in hp is empty/null or invalid number\n.");
+            continue;
+        }
+        pump_configs[index]->pump_power_in_hp = power_in_hp->valuedouble;
+
+         cJSON *current_rating = cJSON_GetObjectItem(pump_obj, "current_rating");
+        if (!current_rating || !cJSON_IsNumber(current_rating))
+        {
+            ESP_LOGE(TAG, "pump current rating is empty/null or invalid number\n.");
+            continue;
+        }
+        pump_configs[index]->pump_current_rating = current_rating->valuedouble;
+        cJSON *min_working_current = cJSON_GetObjectItem(pump_obj, "min_working_current");
+        if (!min_working_current || !cJSON_IsNumber(min_working_current))
+        {
+            ESP_LOGE(TAG, "pump min working current is empty/null or invalid number\n.");
+            continue;
+        }
+        pump_configs[index]->pump_min_working_current = min_working_current->valuedouble;
+        *num_pumps = ++index;
+    }
+    return SYSTEM_OK;
+}
+
+error_type_t get_pump_monitors_configs_from_pump_control_json(const cJSON* pump_control_unit_json, pump_monitor_setup_config_t** pump_monitor_configs, int* num_pump_monitors){
+    *num_pump_monitors = 0;
+    cJSON *pump_monitor_json = cJSON_GetObjectItem(pump_control_unit_json, "pump_monitors");
+    // pump monitor is an array of objects
+    if (!pump_monitor_json || !cJSON_IsArray(pump_monitor_json))
     {
-        ESP_LOGE(TAG, "invalid current sensor object\n.");
+        ESP_LOGE(TAG, "pump monitor is empty/null or invalid array\n.");
         return SYSTEM_INVALID_PARAMETER;
+    }
+    int pump_monitor_array_size = cJSON_GetArraySize(pump_monitor_json);
+    *pump_monitor_configs = (pump_monitor_setup_config_t*)malloc(sizeof(pump_monitor_setup_config_t)*pump_monitor_array_size);
+    /* sample schema for each pump monitor object in the array
+            {
+                "id": 1,
+                "pump_id": 1,
+                "current_sensor_id": 1
+            }
+    */
+   int index = 0;
+   for (int i = 0; i < pump_monitor_array_size; i++){
+        cJSON *pump_monitor_obj = cJSON_GetArrayItem(pump_monitor_json, i);
+        if (!pump_monitor_obj || !cJSON_IsObject(pump_monitor_obj))
+        {
+            ESP_LOGE(TAG, "pump monitor object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *id = cJSON_GetObjectItem(pump_monitor_obj, "id");
+        if (!id || !cJSON_IsNumber(id))
+        {
+            ESP_LOGE(TAG, "pump monitor id is empty/null or invalid int\n.");
+            continue;
+        }
+        pump_monitor_configs[index]->pump_monitor_id = id->valueint;
+
+        cJSON *pump_id = cJSON_GetObjectItem(pump_monitor_obj, "pump_id");
+        if (!pump_id || !cJSON_IsNumber(pump_id))
+        {
+            ESP_LOGE(TAG, "pump monitor pump id is empty/null or invalid int\n.");
+            continue;
+        }
+        pump_monitor_configs[index]->pump_id = pump_id->valueint;
+
+        cJSON *current_sensor_id = cJSON_GetObjectItem(pump_monitor_obj, "current_sensor_id");
+        if (!current_sensor_id || !cJSON_IsNumber(current_sensor_id))
+        {
+            ESP_LOGE(TAG, "pump monitor current sensor id is empty/null or invalid int\n.");
+            continue;
+        }
+        pump_monitor_configs[index]->current_sensor_id = current_sensor_id->valueint;
+        *num_pump_monitors = ++index;
+    }
+    return SYSTEM_OK;
+}
+
+error_type_t get_relays_configs_from_pump_control_json(const cJSON* pump_control_unit_json, relay_setup_config_t** relay_configs, int* num_relays){
+    *num_relays = 0;
+    cJSON *relay_json = cJSON_GetObjectItem(pump_control_unit_json, "relays");
+    // relay is an array of objects
+    if (!relay_json || !cJSON_IsArray(relay_json))
+    {
+        ESP_LOGE(TAG, "relay is empty/null or invalid array\n.");
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    int relay_array_size = cJSON_GetArraySize(relay_json);
+    *relay_configs = (relay_setup_config_t*)malloc(sizeof(relay_setup_config_t)*relay_array_size);
+    /* sample schema for each relay object in the array
+            {
+                "id": 1,
+                "pin_number": 5
+            }
+    */
+   int index = 0;
+   for (int i = 0; i < relay_array_size; i++){
+        cJSON *relay_obj = cJSON_GetArrayItem(relay_json, i);
+        if (!relay_obj || !cJSON_IsObject(relay_obj))
+        {
+            ESP_LOGE(TAG, "relay object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *id = cJSON_GetObjectItem(relay_obj, "id");
+        if (!id || !cJSON_IsNumber(id))
+        {
+            ESP_LOGE(TAG, "relay id is empty/null or invalid int\n.");
+            continue;
+        }
+        relay_configs[index]->relay_id = id->valueint;
+
+        cJSON *pin_number = cJSON_GetObjectItem(relay_obj, "pin_number");
+        if (!pin_number || !cJSON_IsNumber(pin_number))
+        {
+            ESP_LOGE(TAG, "relay pin number is empty/null or invalid int\n.");
+            continue;
+        }
+        relay_configs[index]->relay_pin_number = pin_number->valueint;
+        *num_relays = ++index;
+    }
+    return SYSTEM_OK;
+}
+
+static monitor_type_t string_to_monitor_type(const char* monitor_type_str){
+    if (strcmp("TANK_MONITOR", monitor_type_str) == 0)
+    {
+        return TANK_MONITOR;
+    }
+    else if(strcmp("PUMP_MONITOR", monitor_type_str) == 0)
+    {
+        return PUMP_MONITOR;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown monitor type");
+        return INVALID_MONITOR_TYPE;
+    }
+}
+
+static error_type_t string_to_response_type(const char* response_type_str,response_action_t* response_action){
+    if (strcmp("RELAY_RESPONSE_ONE", response_type_str) == 0)
+    {
+        (*response_action).relay_response = RELAY_RESPONSE_ONE;
+        return SYSTEM_OK;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown response type");
+                return SYSTEM_INVALID_PARAMETER;
+    }
+}
+
+static subscriber_type_t string_to_subscriber_type(const char* subscriber_type_str){
+    if (strcmp("RELAY", subscriber_type_str) == 0)
+    {
+        return SUBSCRIBER_TYPE_RELAY;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown subscriber type");
+        return INVALID_SUBSCRIBER_TYPE;
+    }
+}
+
+error_type_t get_subscriptions_configs_from_pump_control_json(const cJSON* pump_control_unit_json, susbscription_setup_config_t** subscription_configs, int* num_subscriptions){
+    *num_subscriptions = 0;
+    cJSON *subscriptions_json = cJSON_GetObjectItem(pump_control_unit_json, "subscriptions");
+    // subscriptions is an array of objects
+    if (!subscriptions_json || !cJSON_IsArray(subscriptions_json))
+    {
+        ESP_LOGE(TAG, "subscriptions is empty/null or invalid array\n.");
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    int subscriptions_array_size = cJSON_GetArraySize(subscriptions_json);
+    *subscription_configs = (susbscription_setup_config_t*)malloc(sizeof(susbscription_setup_config_t)*subscriptions_array_size);
+    /* sample schema for each subscription object in the array
+    {
+      "monitor_type": "TANK_MONITOR", // or PUMP_MONITOR depending on the monitor type
+      "monitor_id": 1, 
+      "subscribers": [
+        {
+            "type": "RELAY",
+            "id": 1,
+            "response type": "RELAY_RESPONSE_ONE"
+        }
+      ]
+    }
+    */
+   int index = 0;
+   for (int i = 0; i < subscriptions_array_size; i++){
+        cJSON *subscription_obj = cJSON_GetArrayItem(subscriptions_json, i);
+        if (!subscription_obj || !cJSON_IsObject(subscription_obj))
+        {
+            ESP_LOGE(TAG, "subscription object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *monitor_type = cJSON_GetObjectItem(subscription_obj, "monitor_type");
+        if (!monitor_type || !cJSON_IsString(monitor_type))
+        {
+            ESP_LOGE(TAG, "subscription monitor type is empty/null or invalid string\n.");
+            continue;
+        }
+        monitor_type_t type = string_to_monitor_type(monitor_type->valuestring);
+        if (type == INVALID_MONITOR_TYPE)
+        {
+            ESP_LOGE(TAG, "subscription monitor type is invalid\n.");
+            continue;
+        }
+        (*subscription_configs)[index].monitor_type = type;
+
+        cJSON *monitor_id = cJSON_GetObjectItem(subscription_obj, "monitor_id");
+        if (!monitor_id || !cJSON_IsNumber(monitor_id))
+        {
+            ESP_LOGE(TAG, "subscription monitor id is empty/null or invalid int\n.");
+            continue;
+        }
+        (*subscription_configs)[index].monitor_id = monitor_id->valueint;
+
+        cJSON *subscribers = cJSON_GetObjectItem(subscription_obj, "subscribers");
+        if (!subscribers || !cJSON_IsArray(subscribers))
+        {
+            ESP_LOGE(TAG, "subscription subscribers is empty/null or invalid array\n.");
+            continue;
+        }
+        int subscribers_array_size = cJSON_GetArraySize(subscribers);
+        if(subscribers_array_size > MAX_SUBSCRIBERS_PER_MONITOR)
+        {
+            ESP_LOGE(TAG, "number of subscribers exceeded the maximum allowed\n.");
+            continue;
+        }
+        int subscriber_index = 0;
+        for (int j = 0; j < subscribers_array_size; j++){
+            cJSON *subscriber_obj = cJSON_GetArrayItem(subscribers, j);
+            if (!subscriber_obj || !cJSON_IsObject(subscriber_obj))
+            {
+                ESP_LOGE(TAG, "subscriber object is empty/null or invalid object\n.");
+                continue;
+            }
+            cJSON *type = cJSON_GetObjectItem(subscriber_obj, "type");
+            if (!type || !cJSON_IsString(type))
+            {
+                ESP_LOGE(TAG, "subscriber type is empty/null or invalid string\n.");
+                continue;
+            }
+            subscriber_type_t subscriber_type = string_to_subscriber_type(type->valuestring);
+            if (subscriber_type == INVALID_SUBSCRIBER_TYPE)
+            {
+                ESP_LOGE(TAG, "subscriber type is invalid\n.");
+                continue;
+            }
+            (*subscription_configs)[index].subscribers[j].type = subscriber_type;
+
+             cJSON *id = cJSON_GetObjectItem(subscriber_obj, "id");
+            if (!id || !cJSON_IsNumber(id))
+            {
+                ESP_LOGE(TAG, "subscriber id is empty/null or invalid int\n.");
+                continue;
+            }
+            (*subscription_configs)[index].subscribers[j].id = id->valueint;
+
+            cJSON *response_type = cJSON_GetObjectItem(subscriber_obj, "response_type");
+            if (!response_type || !cJSON_IsString(response_type))
+            {
+                ESP_LOGE(TAG, "subscriber response type is empty/null or invalid string\n.");
+                continue;
+            }
+            response_action_t response_action;
+            error_type_t err = string_to_response_type(response_type->valuestring,&response_action);
+            if (err != SYSTEM_OK)
+            {
+                ESP_LOGE(TAG, "subscriber response type is invalid\n.");
+                continue;
+            }
+            (*subscription_configs)[index].subscribers[j].response = response_action;  
+            subscriber_index++;  
+        }
+        (*subscription_configs)[index].num_subscribers = subscriber_index;
+        *num_subscriptions = ++index;
+    }
+    return SYSTEM_OK;
+}
+
+static task_shape_type_t setup_string_to_tank_shape(const char* shape_str){
+    if (strcmp("CYLINDERICAL", shape_str) == 0)
+    {
+        return TANK_SHAPE_CYLINDRICAL;
+    }
+    else if(strcmp("RECTANGULAR", shape_str) == 0)
+    {
+        return TANK_SHAPE_RECTANGULAR;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown tank shape");
+        return INVALID_TANK_SHAPE;
+    }
+}
+
+error_type_t get_tanks_configs_from_pump_control_json(const cJSON* pump_control_unit_json, tank_setup_config_t** tank_configs, int* num_tanks){
+    *num_tanks = 0;
+    cJSON *tank_json = cJSON_GetObjectItem(pump_control_unit_json, "tanks");
+    // tank is an array of objects
+    if (!tank_json || !cJSON_IsArray(tank_json))
+    {
+        ESP_LOGE(TAG, "tank is empty/null or invalid array\n.");
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    int tank_array_size = cJSON_GetArraySize(tank_json);
+    *tank_configs = (tank_setup_config_t*)malloc(sizeof(tank_setup_config_t)*tank_array_size);
+    /* sample schema for each tank object in the array
+            {
+                "id": 1,
+                "capacity_in_liters": 1000,
+                "shape": "cylindrical",
+                "height_in_cm": 150,
+                "full_level_in_mm": 1400,
+                "low_level_in_mm": 200
+            }
+    */
+   int index = 0;
+   for (int i = 0; i < tank_array_size; i++){
+        cJSON *tank_obj = cJSON_GetArrayItem(tank_json, i);
+        if (!tank_obj || !cJSON_IsObject(tank_obj))
+        {
+            ESP_LOGE(TAG, "tank object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *id = cJSON_GetObjectItem(tank_obj, "id");
+        if (!id || !cJSON_IsNumber(id))
+        {
+            ESP_LOGE(TAG, "tank id is empty/null or invalid int\n.");
+            continue;
+        }
+        tank_configs[index]->tank_id = id->valueint;
+
+        cJSON *capacity_in_liters = cJSON_GetObjectItem(tank_obj, "capacity_litres");
+        if (!capacity_in_liters || !cJSON_IsNumber(capacity_in_liters))
+        {
+            ESP_LOGE(TAG, "tank capacity in liters is empty/null or invalid number\n.");
+            continue;
+        }
+        tank_configs[index]->tank_capacity = capacity_in_liters->valuedouble;
+
+        cJSON *shape = cJSON_GetObjectItem(tank_obj, "shape");
+        if (!shape || !cJSON_IsString(shape))
+        {
+            ESP_LOGE(TAG, "tank shape is empty/null or invalid string\n.");
+            continue;
+        }
+        tank_configs[index]->tank_shape = setup_string_to_tank_shape(shape->valuestring);
+        if(tank_configs[index]->tank_shape == INVALID_TANK_SHAPE)
+        {
+            ESP_LOGE(TAG, "tank shape is invalid\n.");
+            continue;
+        }
+        cJSON *height_in_cm = cJSON_GetObjectItem(tank_obj, "height_cm");
+        if (!height_in_cm || !cJSON_IsNumber(height_in_cm)){
+            ESP_LOGE(TAG, "tank height is empty/null or invalid string\n.");
+            continue;
+        }
+        tank_configs[index]->tank_height_cm = height_in_cm->valuedouble;
+        cJSON *full_level_in_mm = cJSON_GetObjectItem(tank_obj, "full_level_mm");
+        if (!full_level_in_mm || !cJSON_IsNumber(full_level_in_mm)){
+            ESP_LOGE(TAG, "tank full level is empty/null or invalid string\n.");
+            continue;
+        }
+        tank_configs[index]->tank_full_level_mm = full_level_in_mm->valueint;
+        cJSON *low_level_in_mm = cJSON_GetObjectItem(tank_obj, "low_level_mm");
+        if (!low_level_in_mm || !cJSON_IsNumber(low_level_in_mm)){
+            ESP_LOGE(TAG, "tank low level is empty/null or invalid string\n.");
+            continue;
+        }
+        tank_configs[index]->tank_low_level_mm = low_level_in_mm->valueint;
+        *num_tanks = ++index;
+    }
+    return SYSTEM_OK;
+}
+
+static level_sensor_interface_type_t string_to_level_sensor_interface_type(const char* interface_str){
+    if (strcmp("RS485", interface_str) == 0)
+    {
+        return RS485;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown level sensor interface");
+        return INVALID_INTERFACE;
+    }
+}
+
+static level_sensor_protocol_type_t string_to_level_sensor_protocol_type(const char* protocol_str){
+    if (strcmp("GA1", protocol_str) == 0)
+    {
+        return GA1;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "unknown level sensor protocol");
+        return INVALID_PROTOCOL;
+    }
+}
+
+error_type_t get_level_sensors_configs_from_pump_control_json(const cJSON* pump_control_unit_json, level_sensor_setup_config_t** level_sensor_configs, int* num_level_sensors){
+    *num_level_sensors = 0;
+    cJSON *level_sensor_json = cJSON_GetObjectItem(pump_control_unit_json, "level_sensors");
+    // level sensor is an array of objects
+    if (!level_sensor_json || !cJSON_IsArray(level_sensor_json))
+    {
+        ESP_LOGE(TAG, "level sensor is empty/null or invalid array\n.");
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    int level_sensor_array_size = cJSON_GetArraySize(level_sensor_json);
+    *level_sensor_configs = (level_sensor_setup_config_t*)malloc(sizeof(level_sensor_setup_config_t)*level_sensor_array_size);
+    /* sample schema for each level sensor object in the array
+        {
+        "id": 1,
+        "interface": "RS485",
+        "address": 1,
+        "protocol": "GA1"
+        }
+    */
+    int index = 0;
+    for (int i = 0; i < level_sensor_array_size; i++){
+        cJSON *level_sensor_obj = cJSON_GetArrayItem(level_sensor_json, i);
+        if (!level_sensor_obj || !cJSON_IsObject(level_sensor_obj))
+        {
+            ESP_LOGE(TAG, "level sensor object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *id = cJSON_GetObjectItem(level_sensor_obj, "id");
+        if (!id || !cJSON_IsNumber(id))
+        {
+            ESP_LOGE(TAG, "level sensor id is empty/null or invalid int\n.");
+            continue;
+        }
+        (*level_sensor_configs)[index].level_sensor_id = id->valueint;
+
+        cJSON *interface = cJSON_GetObjectItem(level_sensor_obj, "interface");
+        if (!interface || !cJSON_IsString(interface))
+        {
+            ESP_LOGE(TAG, "level sensor interface is empty/null or invalid string\n.");
+            continue;
+        }
+        (*level_sensor_configs)[index].interface = string_to_level_sensor_interface_type(interface->valuestring);
+        if((*level_sensor_configs)[index].interface == INVALID_LEVEL_SENSOR_INTERFACE)
+        {
+            ESP_LOGE(TAG, "level sensor interface is invalid\n.");
+            continue;
+        }
+        cJSON *address = cJSON_GetObjectItem(level_sensor_obj, "address");
+        if (!address || !cJSON_IsNumber(address))
+        {
+            ESP_LOGE(TAG, "level sensor address is empty/null or invalid int\n.");
+            continue;
+        }
+        (*level_sensor_configs)[index].sensor_addr = address->valueint;
+
+         cJSON *protocol = cJSON_GetObjectItem(level_sensor_obj, "protocol");
+        if (!protocol || !cJSON_IsString(protocol))
+        {
+            ESP_LOGE(TAG, "level sensor protocol is empty/null or invalid string\n.");
+            continue;
+        }
+        (*level_sensor_configs)[index].protocol = string_to_level_sensor_protocol_type(protocol->valuestring);
+        if((*level_sensor_configs)[index].protocol == INVALID_PROTOCOL)
+        {
+            ESP_LOGE(TAG, "level sensor protocol is invalid\n.");
+            continue;
+        }
+        *num_level_sensors = ++index;
+    }    
+    return SYSTEM_OK;
+}
+
+error_type_t get_tank_monitors_configs_from_pump_control_json(const cJSON* pump_control_unit_json, tank_monitor_setup_config_t** tank_monitor_configs, int* num_tank_monitors){
+    *num_tank_monitors = 0;
+    cJSON *tank_monitor_json = cJSON_GetObjectItem(pump_control_unit_json, "tank_monitors");
+    // tank monitor is an array of objects
+    if (!tank_monitor_json || !cJSON_IsArray(tank_monitor_json))
+    {
+        ESP_LOGE(TAG, "tank monitor is empty/null or invalid array\n.");
+        return SYSTEM_INVALID_PARAMETER;
+    }
+    int tank_monitor_array_size = cJSON_GetArraySize(tank_monitor_json);
+    *tank_monitor_configs = (tank_monitor_setup_config_t*)malloc(sizeof(tank_monitor_setup_config_t)*tank_monitor_array_size);
+    /* sample schema for each tank monitor object in the array
+            {
+                "id": 1,
+                "tank_id": 1,
+                "level_sensor_id": 1
+            }
+    */
+   int index = 0;
+   for (int i = 0; i < tank_monitor_array_size; i++){
+        cJSON *tank_monitor_obj = cJSON_GetArrayItem(tank_monitor_json, i);
+        if (!tank_monitor_obj || !cJSON_IsObject(tank_monitor_obj))
+        {
+            ESP_LOGE(TAG, "tank monitor object is empty/null or invalid object\n.");
+            continue;
+        }
+        cJSON *id = cJSON_GetObjectItem(tank_monitor_obj, "id");
+        if (!id || !cJSON_IsNumber(id))
+        {
+            ESP_LOGE(TAG, "tank monitor id is empty/null or invalid int\n.");
+            continue;
+        }
+        (*tank_monitor_configs)[index].tank_monitor_id = id->valueint;
+
+        cJSON *tank_id = cJSON_GetObjectItem(tank_monitor_obj, "tank_id");
+        if (!tank_id || !cJSON_IsNumber(tank_id))
+        {
+            ESP_LOGE(TAG, "tank monitor tank id is empty/null or invalid int\n.");
+            continue;
+        }
+        (*tank_monitor_configs)[index].tank_id = tank_id->valueint;
+
+        cJSON *level_sensor_id = cJSON_GetObjectItem(tank_monitor_obj, "level_sensor_id");
+        if (!level_sensor_id || !cJSON_IsNumber(level_sensor_id))
+        {
+            ESP_LOGE(TAG, "tank monitor level sensor id is empty/null or invalid int\n.");
+            continue;
+        }
+        (*tank_monitor_configs)[index].level_sensor_id = level_sensor_id->valueint;
+        *num_tank_monitors = ++index;
     }
     return SYSTEM_OK;
 }
